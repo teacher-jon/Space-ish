@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Galaxy -Ish: Hyper-Jump Edition</title>
+    <title>Galaxy -Ish: Fixed Loop</title>
     <style>
         body {
             margin: 0; overflow: hidden; background-color: #0d0e15;
@@ -124,9 +124,10 @@
 
     <div id="start-screen" class="screen-overlay">
         <h1>🚀 Galaxy -ish</h1>
-        <p>1. Shoot the matching word.</p>
-        <p>2. <strong>Spell words</strong> to warp between levels!</p>
-        <button class="menu-btn" onclick="startGame()">LAUNCH MISSION</button>
+        <p><strong>MISSION:</strong></p>
+        <p>1. Shoot the correct word.</p>
+        <p>2. Spell words to warp drive!</p>
+        <button class="menu-btn" onclick="startGame()">LAUNCH</button>
     </div>
 
     <div id="spelling-terminal" class="screen-overlay hidden">
@@ -196,11 +197,11 @@
             osc.frequency.setValueAtTime(600, now); osc.frequency.exponentialRampToValueAtTime(100, now+0.1);
             gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now+0.1);
             osc.start(); osc.stop(now+0.1);
-        } else if (type === 'type') { // Typing sound
+        } else if (type === 'type') { 
             osc.type = 'square'; osc.frequency.setValueAtTime(800, now);
             gain.gain.setValueAtTime(0.05, now); gain.gain.linearRampToValueAtTime(0, now+0.05);
             osc.start(); osc.stop(now+0.05);
-        } else if (type === 'warp') { // Success sound
+        } else if (type === 'warp') { 
             osc.type = 'sine'; osc.frequency.setValueAtTime(200, now); osc.frequency.linearRampToValueAtTime(800, now+0.5);
             gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now+0.5);
             osc.start(); osc.stop(now+0.5);
@@ -212,13 +213,15 @@
     }
 
     // --- GAME STATE ---
-    let gameState = 'START'; // START, PLAYING, SPELLING, GAMEOVER
+    let gameState = 'START';
     let score = 0;
     let wordIndex = 0;
     let currentLevel = 1;
-    const wordsPerLevel = 5; 
     
-    // Spelling Challenge Vars
+    // *** SETTINGS ***
+    const wordsPerLevel = 1; // Test Mode: Spelling every 1 word
+    let lastSpellingIndex = -1; // THE FIX: Memories which levels we finished
+    
     let targetSpellingWord = "";
     let currentTypedWord = "";
 
@@ -246,7 +249,7 @@
         if(e.code === 'ArrowRight') keys.right = false;
     });
 
-    // Touch/Mouse Buttons for Gameplay
+    // Touch/Mouse Buttons
     const btnLeft = document.getElementById('btn-left');
     const btnRight = document.getElementById('btn-right');
     const btnFire = document.getElementById('fire-btn');
@@ -272,6 +275,7 @@
         score = 0;
         wordIndex = 0;
         currentLevel = 1;
+        lastSpellingIndex = -1; // Reset memory
         player.x = width / 2;
         player.y = height - 160;
         stars = [];
@@ -283,11 +287,13 @@
     }
 
     function loadQuestion() {
-        // Check for Level Completion
-        if (wordIndex > 0 && wordIndex % wordsPerLevel === 0) {
+        // *** THE FIX IS HERE ***
+        // Only start spelling if we haven't done it for this index yet
+        if (wordIndex > 0 && wordIndex % wordsPerLevel === 0 && wordIndex !== lastSpellingIndex) {
             startSpellingChallenge();
             return;
         }
+
         if (wordIndex >= ishData.length) {
             endGame();
             return;
@@ -298,8 +304,8 @@
         document.getElementById('sentence-hint').innerText = '"' + data.sent + '"';
         document.getElementById('score-display').innerText = score;
         document.getElementById('level-indicator').innerText = "LEVEL " + currentLevel;
-        document.getElementById('ui-layer').style.display = 'flex'; // Show HUD
-        document.getElementById('touch-controls').style.display = 'flex'; // Show Controls
+        document.getElementById('ui-layer').style.display = 'flex'; 
+        document.getElementById('touch-controls').style.display = 'flex'; 
 
         spawnAsteroids(data);
     }
@@ -307,20 +313,17 @@
     // --- SPELLING CHALLENGE LOGIC ---
     function startSpellingChallenge() {
         gameState = 'SPELLING';
+        lastSpellingIndex = wordIndex; // Remember we did this!
         
-        // Hide Game HUD & Controls
         document.getElementById('ui-layer').style.display = 'none';
         document.getElementById('touch-controls').style.display = 'none';
         
-        // Pick a random word from the level we just finished
-        // (Indices: wordIndex-5 to wordIndex-1)
-        const randomIndex = (wordIndex - wordsPerLevel) + Math.floor(Math.random() * wordsPerLevel);
-        const data = ishData[randomIndex];
+        // Use previous word for spelling check
+        const data = ishData[wordIndex - 1];
         
         targetSpellingWord = data.word.toUpperCase();
         currentTypedWord = "";
         
-        // Show Terminal
         const term = document.getElementById('spelling-terminal');
         term.classList.remove('hidden');
         document.getElementById('word-definition').innerText = "DEFINITION: " + data.def;
@@ -336,11 +339,10 @@
             let key = document.createElement('div');
             key.className = 'key';
             key.innerText = char;
-            key.onmousedown = (e) => { e.preventDefault(); handleSpellingKey(char); }; // Mouse
-            key.ontouchstart = (e) => { e.preventDefault(); handleSpellingKey(char); }; // Touch
+            key.onmousedown = (e) => { e.preventDefault(); handleSpellingKey(char); }; 
+            key.ontouchstart = (e) => { e.preventDefault(); handleSpellingKey(char); }; 
             kb.appendChild(key);
         }
-        // Add Backspace
         let bs = document.createElement('div');
         bs.className = 'key';
         bs.style.minWidth = '60px';
@@ -364,7 +366,6 @@
         }
         updateTypedDisplay();
 
-        // Check Win
         if (currentTypedWord === targetSpellingWord) {
             setTimeout(() => {
                 playSound('warp');
@@ -377,11 +378,10 @@
     function updateTypedDisplay() {
         const display = document.getElementById('typed-input');
         display.innerText = currentTypedWord;
-        // Color green if correct so far
         if (targetSpellingWord.startsWith(currentTypedWord)) {
             display.style.color = "#00cec9";
         } else {
-            display.style.color = "#ff7675"; // Red if wrong letter
+            display.style.color = "#ff7675";
         }
     }
 
@@ -390,9 +390,8 @@
         gameState = 'PLAYING';
         document.getElementById('ui-layer').style.display = 'flex';
         document.getElementById('touch-controls').style.display = 'flex';
-        loadQuestion(); // Resume next word set
+        loadQuestion(); 
     }
-    // ----------------------------
 
     function spawnAsteroids(data) {
         asteroids = []; bullets = []; powerups = [];
@@ -452,7 +451,7 @@
     }
 
     function update() {
-        if(gameState !== 'PLAYING') return; // Pause game loop during spelling
+        if(gameState !== 'PLAYING') return; 
 
         if(player.powerupTime>0) player.powerupTime--;
         if(keys.left && player.x>50) player.x-=player.speed;
@@ -463,7 +462,6 @@
             if(bullets[i].y<0) bullets.splice(i,1);
         }
 
-        // Powerups
         for(let i=powerups.length-1; i>=0; i--) {
             let p = powerups[i]; p.y+=p.speed;
             if(Math.hypot(player.x-p.x, player.y-p.y) < (player.w/2+p.size)) {
@@ -472,13 +470,13 @@
             if(p.y>height) powerups.splice(i,1);
         }
 
-        // Asteroids
         for(let i=asteroids.length-1; i>=0; i--) {
             let a = asteroids[i]; a.y+=a.speed;
             if(a.wobble) a.x+=Math.sin(a.y*0.05)*2; 
+            
+            // Fix: If asteroids fall off screen, respawn SAME question (don't skip)
             if(a.y>height) { asteroids.splice(i,1); continue; }
 
-            // Collisions
             for(let j=bullets.length-1; j>=0; j--) {
                 let b = bullets[j];
                 if(b.x>a.x && b.x<a.x+a.w && b.y>a.y && b.y<a.y+a.h) {
@@ -487,7 +485,7 @@
                     if(a.isCorrect) {
                         playSound('win'); score+=10; wordIndex++; loadQuestion(); return;
                     } else {
-                        playSound('type'); asteroids.splice(i,1); // Hit wrong
+                        playSound('type'); asteroids.splice(i,1); 
                     }
                 }
             }
@@ -498,9 +496,7 @@
         }
         if(asteroids.length===0 && gameState==='PLAYING') spawnAsteroids(ishData[wordIndex]);
 
-        // Particles
         particles.forEach((p,i)=>{ p.x+=p.vx; p.y+=p.vy; p.life-=0.05; if(p.life<=0) particles.splice(i,1); });
-        // Stars
         stars.forEach(s=>{ s.y+=s.speed; if(s.y>height){s.y=0; s.x=Math.random()*width;} });
     }
 
@@ -510,7 +506,6 @@
 
         if(gameState !== 'PLAYING' && gameState !== 'SPELLING') return;
 
-        // Draw Game Elements (Even if paused for spelling, we want to see the background)
         powerups.forEach(p=>{
             ctx.fillStyle='#f1c40f'; ctx.beginPath(); ctx.arc(p.x, p.y, p.size/2, 0, Math.PI*2); ctx.fill();
             ctx.shadowBlur=15; ctx.shadowColor="gold"; ctx.fill(); ctx.shadowBlur=0;
