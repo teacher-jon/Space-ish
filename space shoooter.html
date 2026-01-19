@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Galaxy -Ish: Fixed Edition</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #0d0e15;
+            font-family: 'Courier New', Courier, monospace;
+            color: white;
+            touch-action: none;
+        }
+
+        /* --- HUD & UI --- */
+        #ui-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        #top-hud {
+            width: 100%; padding: 15px;
+            background: rgba(0, 0, 0, 0.8);
+            text-align: center;
+            border-bottom: 2px solid #00d2d3;
+            box-sizing: border-box;
+        }
+
+        #level-indicator { color: #ff9ff3; font-weight: bold; font-size: 18px; margin-bottom: 5px; }
+        #question-text { font-size: 22px; color: #54a0ff; font-weight: bold; text-shadow: 0 0 10px #54a0ff; }
+        #sentence-hint { font-size: 16px; font-style: italic; color: #c8d6e5; margin-top: 5px; }
+        
+        #score-display {
+            position: absolute; top: 15px; right: 20px;
+            font-size: 20px; color: #feca57; font-weight: bold;
+        }
+
+        /* --- TOUCH CONTROLS --- */
+        #touch-controls {
+            position: absolute; bottom: 20px; left: 0;
+            width: 100%; height: 120px;
+            pointer-events: auto;
+            display: flex; justify-content: space-between;
+            padding: 0 40px; box-sizing: border-box; z-index: 50;
+        }
+
+        .touch-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            width: 80px; height: 80px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 30px; color: white;
+            user-select: none; -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        .touch-btn:active { background: rgba(84, 160, 255, 0.6); transform: scale(0.95); }
+        #fire-btn { background: rgba(238, 82, 83, 0.3); border-color: #ee5253; width: 90px; height: 90px; }
+        #fire-btn:active { background: rgba(238, 82, 83, 0.8); }
+
+        /* --- SCREENS --- */
+        .screen-overlay {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(16, 20, 30, 0.95);
+            padding: 30px; border-radius: 20px;
+            border: 4px solid #54a0ff;
+            text-align: center; pointer-events: auto;
+            z-index: 100; width: 80%; max-width: 400px;
+        }
+        .hidden { display: none !important; }
+        
+        button.menu-btn {
+            background: #00d2d3; color: #2d3436; border: none;
+            padding: 15px 30px; font-size: 20px; font-weight: bold;
+            cursor: pointer; border-radius: 50px; margin-top: 20px;
+            font-family: inherit; width: 100%;
+        }
+        button.menu-btn:active { transform: scale(0.95); }
+        canvas { display: block; }
+        
+        /* Powerup Notification */
+        #powerup-msg {
+            position: absolute; top: 40%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: #feca57; font-size: 30px; font-weight: bold;
+            text-shadow: 0 0 20px gold;
+            display: none; pointer-events: none;
+            animation: popFade 1s forwards;
+        }
+        @keyframes popFade { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); } 100% { opacity: 0; transform: translate(-50%, -100%) scale(1); } }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui-layer">
+        <div id="top-hud">
+            <div id="level-indicator">LEVEL 1</div>
+            <div id="question-text">Loading...</div>
+            <div id="sentence-hint">Prepare for launch</div>
+        </div>
+        <div id="score-display">0</div>
+        <div id="powerup-msg">DUAL BLASTERS! ⭐</div>
+    </div>
+
+    <div id="touch-controls">
+        <div style="display:flex; gap:20px;">
+            <div class="touch-btn" id="btn-left">◀</div>
+            <div class="touch-btn" id="btn-right">▶</div>
+        </div>
+        <div class="touch-btn" id="fire-btn">🔥</div>
+    </div>
+
+    <div id="start-screen" class="screen-overlay">
+        <h1>🚀 Galaxy -ish</h1>
+        <p><strong>Mission:</strong> Shoot the correct word!</p>
+        <p>Grab <strong>Gold Stars</strong> for powerups!</p>
+        <p><em>If you miss, the words will return.</em></p>
+        <button class="menu-btn" onclick="startGame()">LAUNCH MISSION</button>
+    </div>
+
+    <div id="level-screen" class="screen-overlay hidden">
+        <h1>🎉 Level Complete!</h1>
+        <p>Great job! Entering next zone...</p>
+        <p style="color: #ff9ff3">Asteroids are getting faster!</p>
+        <button class="menu-btn" onclick="nextLevel()">CONTINUE</button>
+    </div>
+
+    <div id="game-over-screen" class="screen-overlay hidden">
+        <h1>Mission Complete!</h1>
+        <p>You mastered all the words!</p>
+        <h2 id="final-score">Score: 0</h2>
+        <button class="menu-btn" onclick="resetGame()">PLAY AGAIN</button>
+    </div>
+
+<script>
+    // --- DATA ---
+    const ishData = [
+        { base: "Green", word: "Greenish", def: "Sort of green", sent: "The banana is still ____." },
+        { base: "Red", word: "Reddish", def: "Looks mostly red", sent: "The sunset was ____ orange." },
+        { base: "Warm", word: "Warmish", def: "A little bit warm", sent: "The cocoa was only ____." },
+        { base: "Cold", word: "Coldish", def: "A little bit cold", sent: "The water feels ____." },
+        { base: "Sweet", word: "Sweetish", def: "Tastes sort of sweet", sent: "The medicine was ____." },
+        { base: "Sheep", word: "Sheepish", def: "Shy or embarrassed", sent: "He gave a ____ smile." },
+        { base: "Book", word: "Bookish", def: "Loves reading", sent: "She is very ____." },
+        { base: "Clown", word: "Clownish", def: "Acting silly/funny", sent: "Stop being ____!" },
+        { base: "Child", word: "Childish", def: "Acting like a kid", sent: "It is ____ to cry." },
+        { base: "Self", word: "Selfish", def: "Thinking only of self", sent: "The ____ squirrel." },
+        { base: "Small", word: "Smallish", def: "Sort of small", sent: "We need a ____ box." },
+        { base: "Tall", word: "Tallish", def: "Kind of tall", sent: "The tree is ____." },
+        { base: "Round", word: "Roundish", def: "Mostly round", sent: "A smooth, ____ rock." },
+        { base: "Flat", word: "Flattish", def: "Mostly flat", sent: "Find a ____ stone." },
+        { base: "New", word: "Newish", def: "Mostly new", sent: "My bike is ____." },
+        { base: "Old", word: "Oldish", def: "Kind of old", sent: "We drive an ____ car." },
+        { base: "Soon", word: "Soonish", def: "In a little while", sent: "We will finish ____." },
+        { base: "Seven", word: "Sevenish", def: "Around 7:00", sent: "Wake me at ____." },
+        { base: "Blue", word: "Bluish", def: "Sort of blue", sent: "His lips turned ____." },
+        { base: "Tickle", word: "Ticklish", def: "Laughs when touched", sent: "I am very ____!" }
+    ];
+
+    // --- SETUP ---
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    let width, height;
+
+    function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // --- AUDIO SYSTEM ---
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    function playSound(type) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
+
+        if (type === 'shoot') {
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.linearRampToValueAtTime(0, now + 0.1);
+            osc.start(); osc.stop(now + 0.1);
+        } else if (type === 'powerup') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(400, now);
+            osc.frequency.linearRampToValueAtTime(800, now + 0.2);
+            osc.frequency.linearRampToValueAtTime(1200, now + 0.4);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.linearRampToValueAtTime(0, now + 0.4);
+            osc.start(); osc.stop(now + 0.4);
+        } else if (type === 'hit') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(100, now);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.linearRampToValueAtTime(0, now + 0.2);
+            osc.start(); osc.stop(now + 0.2);
+        } else if (type === 'win') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(400, now);
+            osc.frequency.setValueAtTime(600, now + 0.1);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.linearRampToValueAtTime(0, now + 0.3);
+            osc.start(); osc.stop(now + 0.3);
+        }
+    }
+
+    // --- GAME STATE ---
+    let gameActive = false;
+    let score = 0;
+    let wordIndex = 0;
+    let currentLevel = 1;
+    const wordsPerLevel = 5; 
+    
+    // Entities
+    const player = { 
+        x: 0, y: 0, w: 50, h: 50, speed: 6, color: '#00d2d3',
+        powerupTime: 0 
+    };
+    
+    let bullets = [];
+    let asteroids = [];
+    let particles = [];
+    let stars = [];
+    let powerups = [];
+
+    const keys = { left: false, right: false };
+
+    // --- CONTROLS ---
+    window.addEventListener('keydown', e => {
+        if(e.code === 'ArrowLeft') keys.left = true;
+        if(e.code === 'ArrowRight') keys.right = true;
+        if(e.code === 'Space') fireBullet();
+    });
+    window.addEventListener('keyup', e => {
+        if(e.code === 'ArrowLeft') keys.left = false;
+        if(e.code === 'ArrowRight') keys.right = false;
+    });
+
+    const btnLeft = document.getElementById('btn-left');
+    const btnRight = document.getElementById('btn-right');
+    const btnFire = document.getElementById('fire-btn');
+
+    const addTouch = (elem, key) => {
+        elem.addEventListener('touchstart', (e) => { e.preventDefault(); keys[key] = true; });
+        elem.addEventListener('touchend', (e) => { e.preventDefault(); keys[key] = false; });
+    };
+    addTouch(btnLeft, 'left');
+    addTouch(btnRight, 'right');
+    btnFire.addEventListener('touchstart', (e) => { e.preventDefault(); fireBullet(); btnFire.style.transform="scale(0.9)"; });
+    btnFire.addEventListener('touchend', (e) => { e.preventDefault(); btnFire.style.transform="scale(1)"; });
+
+    // --- LOGIC ---
+
+    function startGame() {
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('game-over-screen').classList.add('hidden');
+        score = 0;
+        wordIndex = 0;
+        currentLevel = 1;
+        player.x = width / 2;
+        player.y = height - 160;
+        player.powerupTime = 0;
+
+        stars = [];
+        for(let i=0; i<80; i++) stars.push({x: Math.random()*width, y: Math.random()*height, speed: Math.random()*3});
+
+        loadQuestion();
+        gameActive = true;
+        gameLoop();
+    }
+
+    function loadQuestion() {
+        if (wordIndex > 0 && wordIndex % wordsPerLevel === 0) {
+            gameActive = false;
+            document.getElementById('level-screen').classList.remove('hidden');
+            return;
+        }
+        if (wordIndex >= ishData.length) {
+            endGame();
+            return;
+        }
+
+        const data = ishData[wordIndex];
+        document.getElementById('question-text').innerText = "TARGET: " + data.def;
+        document.getElementById('sentence-hint').innerText = '"' + data.sent + '"';
+        document.getElementById('score-display').innerText = score;
+        document.getElementById('level-indicator').innerText = "LEVEL " + currentLevel;
+
+        spawnAsteroids(data);
+    }
+
+    function nextLevel() {
+        currentLevel++;
+        gameActive = true;
+        document.getElementById('level-screen').classList.add('hidden');
+        gameLoop();
+        spawnAsteroids(ishData[wordIndex]);
+    }
+
+    function spawnAsteroids(data) {
+        asteroids = [];
+        bullets = [];
+        powerups = [];
+
+        // Chance to spawn powerup
+        if(Math.random() < 0.3) {
+            powerups.push({
+                x: Math.random() * (width - 40) + 20,
+                y: -300,
+                size: 30,
+                speed: 2,
+                active: true
+            });
+        }
+
+        let options = [data.word];
+        while (options.length < 3) {
+            let r = ishData[Math.floor(Math.random() * ishData.length)].word;
+            if (!options.includes(r)) options.push(r);
+        }
+        options.sort(() => Math.random() - 0.5);
+
+        let baseSpeed = 1.5 + (currentLevel * 0.8);
+        const sector = width / 3;
+        options.forEach((word, i) => {
+            asteroids.push({
+                x: (i * sector) + (sector/2) - 50,
+                y: -150 - (Math.random()*100),
+                w: 120, h: 60,
+                text: word,
+                isCorrect: word === data.word,
+                speed: baseSpeed,
+                wobble: currentLevel > 2 ? Math.random() * 0.05 : 0
+            });
+        });
+    }
+
+    function fireBullet() {
+        if(!gameActive) return;
+        playSound('shoot');
+
+        if(player.powerupTime > 0) {
+            bullets.push({x: player.x - 20, y: player.y - 20, w: 8, h: 20, speed: 12, color: '#feca57'});
+            bullets.push({x: player.x + 20, y: player.y - 20, w: 8, h: 20, speed: 12, color: '#feca57'});
+        } else {
+            bullets.push({x: player.x, y: player.y - 20, w: 8, h: 20, speed: 12, color: '#ff9f43'});
+        }
+    }
+
+    function activatePowerup() {
+        playSound('powerup');
+        player.powerupTime = 300; 
+        const msg = document.getElementById('powerup-msg');
+        msg.style.display = 'block';
+        msg.style.animation = 'none';
+        msg.offsetHeight; 
+        msg.style.animation = 'popFade 1.5s forwards';
+    }
+
+    function spawnParticles(x, y, color) {
+        for(let i=0; i<10; i++) {
+            particles.push({
+                x: x, y: y,
+                vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10,
+                life: 1, color: color
+            });
+        }
+    }
+
+    function endGame() {
+        gameActive = false;
+        document.getElementById('game-over-screen').classList.remove('hidden');
+        document.getElementById('final-score').innerText = "Final Score: " + score;
+    }
+
+    function resetGame() {
+        // Reshuffle for new game
+        ishData.sort(() => Math.random() - 0.5);
+        startGame();
+    }
+
+    function update() {
+        if(!gameActive) return;
+
+        if(player.powerupTime > 0) player.powerupTime--;
+
+        // Move Player
+        if(keys.left && player.x > 50) player.x -= player.speed;
+        if(keys.right && player.x < width - 50) player.x += player.speed;
+
+        // Move Bullets
+        for(let i=bullets.length-1; i>=0; i--) {
+            bullets[i].y -= bullets[i].speed;
+            if(bullets[i].y < 0) bullets.splice(i, 1);
+        }
+
+        // Move Powerups
+        for(let i=powerups.length-1; i>=0; i--) {
+            let p = powerups[i];
+            p.y += p.speed;
+            
+            // Collision Player/Powerup
+            let dx = player.x - p.x;
+            let dy = player.y - p.y;
+            let distance = Math.sqrt(dx*dx + dy*dy);
+            
+            if(distance < (player.w/2 + p.size)) {
+                activatePowerup();
+                powerups.splice(i, 1);
+                continue;
+            }
+            if(p.y > height) powerups.splice(i, 1);
+        }
+
+        // Move Asteroids
+        for(let i=asteroids.length-1; i>=0; i--) {
+            let a = asteroids[i];
+            a.y += a.speed;
+            if(a.wobble) a.x += Math.sin(a.y * 0.05) * 2; 
+
+            // Check if asteroid fell off screen
+            if (a.y > height) {
+                asteroids.splice(i, 1);
+                continue;
+            }
+
+            // Bullet Hit
+            for(let j=bullets.length-1; j>=0; j--) {
+                let b = bullets[j];
+                if(b.x > a.x && b.x < a.x+a.w && b.y > a.y && b.y < a.y+a.h) {
+                    bullets.splice(j,1);
+                    spawnParticles(a.x+a.w/2, a.y+a.h/2, a.isCorrect ? '#00b894' : '#d63031');
+                    if(a.isCorrect) {
+                        playSound('win');
+                        score += 10;
+                        wordIndex++;
+                        loadQuestion();
+                        return;
+                    } else {
+                        playSound('hit');
+                        asteroids.splice(i,1);
+                    }
+                }
+            }
+
+            // Player Hit
+            if(player.x < a.x+a.w && player.x > a.x && player.y < a.y+a.h && player.y > a.y) {
+                 playSound('hit');
+                 spawnParticles(player.x, player.y, 'red');
+                 player.powerupTime = 0;
+                 spawnAsteroids(ishData[wordIndex]);
+                 return;
+            }
+        }
+
+        // RESPAWN LOGIC: If all asteroids are gone (hit or fell off) but level isn't done
+        if(asteroids.length === 0 && gameActive) {
+            spawnAsteroids(ishData[wordIndex]);
+        }
+
+        // Particles
+        particles.forEach((p, i) => {
+            p.x += p.vx; p.y += p.vy; p.life -= 0.05;
+            if(p.life <= 0) particles.splice(i, 1);
+        });
+
+        // Stars
+        stars.forEach(s => { s.y += s.speed; if(s.y > height) { s.y = 0; s.x = Math.random()*width; } });
+    }
+
+    function draw() {
+        ctx.fillStyle = '#0d0e15';
+        ctx.fillRect(0, 0, width, height);
+
+        // Stars
+        ctx.fillStyle = 'white';
+        stars.forEach(s => { ctx.beginPath(); ctx.arc(s.x, s.y, 1, 0, Math.PI*2); ctx.fill(); });
+
+        if(!gameActive) return;
+
+        // Powerups
+        powerups.forEach(p => {
+            ctx.fillStyle = '#f1c40f';
+            ctx.beginPath();
+            for(let i=0; i<5; i++){
+                ctx.lineTo(Math.cos((18+i*72)/180*Math.PI)*p.size + p.x,
+                           -Math.sin((18+i*72)/180*Math.PI)*p.size + p.y);
+                ctx.lineTo(Math.cos((54+i*72)/180*Math.PI)*(p.size/2) + p.x,
+                           -Math.sin((54+i*72)/180*Math.PI)*(p.size/2) + p.y);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.shadowBlur = 15; ctx.shadowColor = "gold"; ctx.fill(); ctx.shadowBlur = 0;
+        });
+
+        // Player
+        ctx.save();
+        ctx.translate(player.x, player.y);
+        ctx.fillStyle = player.powerupTime > 0 ? '#f1c40f' : player.color;
+        ctx.beginPath();
+        ctx.moveTo(0, -30); ctx.lineTo(20, 20); ctx.lineTo(-20, 20);
+        ctx.fill();
+        ctx.fillStyle = 'orange'; 
+        ctx.beginPath(); ctx.moveTo(-10, 20); ctx.lineTo(0, 35+Math.random()*10); ctx.lineTo(10, 20); ctx.fill();
+        ctx.restore();
+
+        // Asteroids
+        asteroids.forEach(a => {
+            ctx.fillStyle = '#636e72';
+            ctx.beginPath(); ctx.roundRect(a.x, a.y, a.w, a.h, 10); ctx.fill();
+            ctx.strokeStyle = '#b2bec3'; ctx.lineWidth = 3; ctx.stroke();
+            ctx.fillStyle = 'white'; ctx.font = 'bold 20px Arial'; ctx.textAlign = 'center';
+            ctx.fillText(a.text, a.x+a.w/2, a.y+a.h/2+7);
+        });
+
+        // Bullets
+        bullets.forEach(b => { ctx.fillStyle = b.color; ctx.fillRect(b.x-4, b.y, b.w, b.h); });
+
+        // Particles
+        particles.forEach(p => {
+            ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
+            ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1;
+        });
+    }
+
+    function gameLoop() {
+        update();
+        draw();
+        if(gameActive) requestAnimationFrame(gameLoop);
+    }
+</script>
+</body>
+</html>
