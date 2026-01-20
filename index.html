@@ -33,7 +33,6 @@
             font-size: 20px; color: #feca57; font-weight: bold;
         }
 
-        /* NEW QUIT BUTTON */
         #quit-btn {
             position: absolute; top: 15px; left: 15px; pointer-events: auto;
             background: rgba(214, 48, 49, 0.8); border: 1px solid #ff7675;
@@ -43,7 +42,6 @@
         }
         #quit-btn:active { transform: scale(0.95); background: #ff7675; }
 
-        /* --- CONTROLS --- */
         #touch-controls {
             position: absolute; bottom: 20px; left: 0; width: 100%; height: 120px;
             pointer-events: auto; display: flex; justify-content: space-between;
@@ -60,7 +58,6 @@
         #fire-btn { background: rgba(238, 82, 83, 0.3); border-color: #ee5253; width: 90px; height: 90px; }
         #fire-btn:active, #fire-btn.pressed { background: rgba(238, 82, 83, 0.8); }
 
-        /* --- SCREENS --- */
         .screen-overlay {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: rgba(16, 20, 30, 0.95); padding: 30px; border-radius: 20px;
@@ -76,7 +73,6 @@
         }
         button.menu-btn:active { transform: scale(0.95); }
         
-        /* USERNAME INPUT STYLES */
         #player-name {
             background: rgba(0, 0, 0, 0.5); border: 2px solid #00d2d3;
             color: #00d2d3; font-family: 'Courier New', Courier, monospace;
@@ -85,7 +81,6 @@
         }
         #player-name::placeholder { color: rgba(0, 210, 211, 0.4); }
 
-        /* SPELLING TERMINAL STYLES */
         #spelling-terminal {
             border-color: #00cec9;
             box-shadow: 0 0 30px rgba(0, 206, 201, 0.3);
@@ -183,9 +178,7 @@
     </div>
 
 <script>
-    // --- EXPANDED DATA BANK ---
     const sourceData = [
-        // --- ISH WORDS ---
         { word: "Greenish", def: "Sort of green", sent: "The banana is still ____.", group: "ish" },
         { word: "Reddish", def: "Looks mostly red", sent: "The sunset was ____ orange.", group: "ish" },
         { word: "Smallish", def: "Sort of small", sent: "We need a ____ box.", group: "ish" },
@@ -214,8 +207,6 @@
         { word: "Hardish", def: "Kind of hard", sent: "The bread is ____.", group: "ish" },
         { word: "Wildish", def: "A little bit wild", sent: "The garden looks ____.", group: "ish" },
         { word: "Whitish", def: "Sort of white", sent: "The smoke was ____.", group: "ish" },
-        
-        // --- FUL WORDS ---
         { word: "Helpful", def: "Full of help", sent: "Thank you for being ____.", group: "ful" },
         { word: "Playful", def: "Full of play", sent: "The puppy is very ____.", group: "ful" },
         { word: "Hopeful", def: "Full of hope", sent: "I am ____ we will win.", group: "ful" },
@@ -228,8 +219,6 @@
         { word: "Thankful", def: "Full of thanks", sent: "I am ____ for my food.", group: "ful" },
         { word: "Wishful", def: "Full of wishes", sent: "That is ____ thinking.", group: "ful" },
         { word: "Useful", def: "Full of use", sent: "This tool is very ____.", group: "ful" },
-
-        // --- LESS WORDS ---
         { word: "Fearless", def: "Without fear", sent: "The hero was ____.", group: "less" },
         { word: "Hopeless", def: "Without hope", sent: "The situation felt ____.", group: "less" },
         { word: "Toothless", def: "Without teeth", sent: "The ____ baby smiled.", group: "less" },
@@ -241,8 +230,6 @@
         { word: "Useless", def: "Without use", sent: "A broken toy is ____.", group: "less" },
         { word: "Powerless", def: "Without power", sent: "We were ____ to stop it.", group: "less" },
         { word: "Sleepless", def: "Without sleep", sent: "I had a ____ night.", group: "less" },
-
-        // --- LY WORDS ---
         { word: "Quickly", def: "In a quick way", sent: "Run ____ to the door!", group: "ly" },
         { word: "Slowly", def: "In a slow way", sent: "The turtle walked ____.", group: "ly" },
         { word: "Loudly", def: "In a loud way", sent: "He shouted ____.", group: "ly" },
@@ -256,24 +243,15 @@
         { word: "Bravely", def: "In a brave way", sent: "He ____ fought the dragon.", group: "ly" }
     ];
 
-    // ==========================================
-    // === GOOGLE FORMS CONFIGURATION SECTION ===
-    // ==========================================
-    
-    // Converted to formResponse URL for submission
     const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSf8CTLRXWtnudAp_w8aHHXFIJTg90r72GRyKihHlVYPf7mi5A/formResponse";
-    
-    // Extracted Entry IDs
-    const FORM_ID_NAME = "entry.367069068";       // Username
-    const FORM_ID_SCORE = "entry.1373567510";     // Score
-    const FORM_ID_MISTAKES = "entry.1389440728";  // Detailed Mistakes
-    const FORM_ID_PROBLEM = "entry.2123758649";   // Problem Area
-
-    // ==========================================
+    const FORM_ID_NAME = "entry.367069068";     
+    const FORM_ID_SCORE = "entry.1373567510";   
+    const FORM_ID_MISTAKES = "entry.1389440728";
+    const FORM_ID_PROBLEM = "entry.2123758649"; 
 
     let gameDeck = [];
     let username = "Unknown";
-    let battleLog = []; // Stores the "Diary" of the game
+    let battleLog = [];
     let lives = 3;
 
     // --- SETUP ---
@@ -316,15 +294,12 @@
     let score = 0;
     let wordIndex = 0;
     let currentLevel = 1;
-    
-    // Level Config
     const wordsPerLevel = 5; 
     let lastSpellingIndex = -1;
     
     let targetSpellingWord = "";
     let currentTypedWord = "";
 
-    // Entities
     const player = { x: 0, y: 0, w: 50, h: 50, speed: 6, color: '#00d2d3', powerupTime: 0 };
     let bullets = [];
     let asteroids = [];
@@ -365,39 +340,26 @@
     btnFire.addEventListener('mousedown', ()=>{if(gameState==='PLAYING') fireBullet(); btnFire.classList.add('pressed');});
     btnFire.addEventListener('mouseup', ()=>{btnFire.classList.remove('pressed');});
 
-    // --- DECK BUILDER ---
     function buildDeck() {
-        // Filter groups
         let ish = sourceData.filter(d => d.group === 'ish');
         let ful = sourceData.filter(d => d.group === 'ful');
         let less = sourceData.filter(d => d.group === 'less');
         let ly = sourceData.filter(d => d.group === 'ly');
-
-        // Shuffle each group
         const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
         shuffle(ish); shuffle(ful); shuffle(less); shuffle(ly);
-
-        // Build progression: ISH -> FUL -> LESS -> LY
         gameDeck = [...ish, ...ful, ...less, ...ly];
     }
 
-    // --- LOGIC ---
-
     function startGame() {
-        // 1. Capture the input
         const nameInput = document.getElementById('player-name');
         const nameVal = nameInput.value.trim();
-
-        // 2. Validate
         if (nameVal === "") {
             nameInput.style.borderColor = "#ff7675";
             nameInput.placeholder = "NAME REQUIRED!";
             return; 
         }
-        
         username = nameVal;
-        battleLog = []; // Reset log for new game
-
+        battleLog = [];
         document.getElementById('start-screen').classList.add('hidden');
         document.getElementById('game-over-screen').classList.add('hidden');
         score = 0;
@@ -405,15 +367,12 @@
         currentLevel = 1;
         lives = 3;
         lastSpellingIndex = -1;
-        
         updateLivesDisplay();
         buildDeck();
-        
         player.x = width / 2;
         player.y = height - 160;
         stars = [];
         for(let i=0; i<80; i++) stars.push({x: Math.random()*width, y: Math.random()*height, speed: Math.random()*3});
-        
         loadQuestion();
         gameState = 'PLAYING';
         gameLoop();
@@ -437,12 +396,10 @@
             startSpellingChallenge();
             return;
         }
-
         if (wordIndex >= gameDeck.length) {
             endGame();
             return;
         }
-
         const data = gameDeck[wordIndex];
         document.getElementById('question-text').innerText = "TARGET: " + data.def;
         document.getElementById('sentence-hint').innerText = '"' + data.sent + '"';
@@ -450,21 +407,17 @@
         document.getElementById('level-indicator').innerText = "LEVEL " + currentLevel;
         document.getElementById('ui-layer').style.display = 'flex'; 
         document.getElementById('touch-controls').style.display = 'flex'; 
-
         spawnAsteroids(data);
     }
 
     function startSpellingChallenge() {
         gameState = 'SPELLING';
         lastSpellingIndex = wordIndex;
-        
         document.getElementById('ui-layer').style.display = 'none';
         document.getElementById('touch-controls').style.display = 'none';
-        
         const data = gameDeck[wordIndex - 1]; 
         targetSpellingWord = data.word.toUpperCase();
         currentTypedWord = "";
-        
         const term = document.getElementById('spelling-terminal');
         term.classList.remove('hidden');
         document.getElementById('word-definition').innerText = "DEFINITION: " + data.def;
@@ -495,7 +448,6 @@
 
     function handleSpellingKey(key) {
         if (gameState !== 'SPELLING') return;
-
         if (key === 'Backspace') {
             currentTypedWord = currentTypedWord.slice(0, -1);
             playSound('type');
@@ -506,7 +458,6 @@
             }
         }
         updateTypedDisplay();
-
         if (currentTypedWord === targetSpellingWord) {
             setTimeout(() => {
                 playSound('warp');
@@ -537,17 +488,14 @@
     function spawnAsteroids(data) {
         asteroids = []; bullets = []; powerups = [];
         if(Math.random() < 0.3) powerups.push({x: Math.random()*(width-40)+20, y: -300, size: 30, speed: 2});
-
         let options = [data.word];
         while(options.length < 3) {
             let r = gameDeck[Math.floor(Math.random()*gameDeck.length)].word;
             if(!options.includes(r)) options.push(r);
         }
         options.sort(()=>Math.random()-0.5);
-
         let baseSpeed = 1.5 + (currentLevel * 0.2); 
         if (baseSpeed > 5) baseSpeed = 5;
-
         const sector = width/3;
         options.forEach((word, i) => {
             asteroids.push({
@@ -580,18 +528,14 @@
         for(let i=0; i<10; i++) particles.push({x:x, y:y, vx:(Math.random()-0.5)*10, vy:(Math.random()-0.5)*10, life:1, color:color});
     }
 
-    // --- DATA TRACKING & REPORTING ---
-    
     function analyzePerformance() {
         let mistakes = battleLog.filter(entry => entry.result === "WRONG");
         let mistakeText = mistakes.map(m => `${m.word} (-${m.group})`).join(", ");
         if (mistakeText === "") mistakeText = "None! Perfect Run.";
-
         let counts = { ish: 0, ful: 0, less: 0, ly: 0 };
         mistakes.forEach(m => {
             if (counts[m.group] !== undefined) counts[m.group]++;
         });
-
         let maxErrors = 0;
         let worstGroup = "None";
         for (const [group, count] of Object.entries(counts)) {
@@ -600,25 +544,24 @@
                 worstGroup = "-" + group.toUpperCase();
             }
         }
-
         return { mistakeText, worstGroup };
     }
 
-    function sendScoreToGoogleSheets() {
+    function getFormData() {
         const report = analyzePerformance();
-        
-        // VISUAL FEEDBACK
-        document.getElementById('saving-msg').style.display = 'block';
-
         const formData = new FormData();
         formData.append(FORM_ID_NAME, username);
         formData.append(FORM_ID_SCORE, score);
         formData.append(FORM_ID_MISTAKES, report.mistakeText);
         formData.append(FORM_ID_PROBLEM, report.worstGroup);
+        return formData;
+    }
 
+    function sendScoreToGoogleSheets() {
+        document.getElementById('saving-msg').style.display = 'block';
         fetch(GOOGLE_FORM_URL, {
             method: "POST",
-            body: formData,
+            body: getFormData(),
             mode: "no-cors"
         }).then(() => {
             console.log("Report sent!");
@@ -630,13 +573,21 @@
         });
     }
 
+    // --- SAFETY NET: AUTO-SEND ON CLOSE ---
+    // If user closes tab, refreshes, or switches apps on mobile
+    document.addEventListener("visibilitychange", function() {
+        if (document.visibilityState === 'hidden' && gameState === 'PLAYING' && username !== "Unknown") {
+            // Use Beacon to send data reliably even as the page dies
+            navigator.sendBeacon(GOOGLE_FORM_URL, getFormData());
+        }
+    });
+
     function endGame() {
         gameState = 'GAMEOVER';
         document.getElementById('ui-layer').style.display = 'none';
         document.getElementById('touch-controls').style.display = 'none';
         document.getElementById('game-over-screen').classList.remove('hidden');
         document.getElementById('final-score').innerText = "Score: " + score;
-        
         sendScoreToGoogleSheets();
     }
 
@@ -682,11 +633,8 @@
                     }
                 }
             }
-            // COLLISION WITH SHIP
             if(player.x<a.x+a.w && player.x>a.x && player.y<a.y+a.h && player.y>a.y) {
                  playSound('type'); spawnParticles(player.x, player.y, 'red');
-                 
-                 // NEW LIVES LOGIC
                  lives--;
                  updateLivesDisplay();
                  
