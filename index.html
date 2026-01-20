@@ -260,6 +260,7 @@
     let username = "Unknown";
     let battleLog = [];
     let lives = 3;
+    let powerupMsgTimer = null; // Fix for persistent message
 
     // --- SETUP ---
     const canvas = document.getElementById('gameCanvas');
@@ -542,7 +543,6 @@
     }
 
     function trySpawnCollectibles() {
-        // Slightly Increased rates for fun
         let rand = Math.random();
         
         // 1. Dual Blaster (Yellow) - 20%
@@ -583,7 +583,12 @@
 
     function activatePowerup(p) {
         const msg = document.getElementById('powerup-msg');
-        msg.style.display = 'block'; msg.style.animation = 'none'; msg.offsetHeight; msg.style.animation = 'blink 1.5s forwards';
+        
+        // Clear any existing timer to prevent early disappearance
+        if (powerupMsgTimer) clearTimeout(powerupMsgTimer);
+
+        // Show the message
+        msg.style.display = 'block';
 
         if (p.type === 'GUN') {
             player.powerupTime = 300; 
@@ -603,6 +608,11 @@
             playSound('shield');
             msg.innerText = "SHIELD UP! 🛡️";
         }
+
+        // Hide message after 2 seconds
+        powerupMsgTimer = setTimeout(() => {
+            msg.style.display = 'none';
+        }, 2000);
     }
 
     function spawnParticles(x, y, color) {
