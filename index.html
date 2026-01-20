@@ -64,6 +64,15 @@
         }
         button.menu-btn:active { transform: scale(0.95); }
         
+        /* USERNAME INPUT STYLES */
+        #player-name {
+            background: rgba(0, 0, 0, 0.5); border: 2px solid #00d2d3;
+            color: #00d2d3; font-family: 'Courier New', Courier, monospace;
+            font-size: 24px; padding: 10px; text-align: center; width: 80%;
+            border-radius: 10px; outline: none; text-transform: uppercase; margin-bottom: 10px;
+        }
+        #player-name::placeholder { color: rgba(0, 210, 211, 0.4); }
+
         /* SPELLING TERMINAL STYLES */
         #spelling-terminal {
             border-color: #00cec9;
@@ -98,6 +107,7 @@
             color: #feca57; font-size: 30px; font-weight: bold; text-shadow: 0 0 20px gold;
             display: none; pointer-events: none;
         }
+        #saving-msg { font-size: 14px; color: #fab1a0; margin-top: 10px; display: none; }
     </style>
 </head>
 <body>
@@ -124,11 +134,14 @@
 
     <div id="start-screen" class="screen-overlay">
         <h1>🚀 Galaxy Explorer</h1>
-        <p><strong>MISSION BRIEF:</strong></p>
-        <p>Levels 1-5: The <strong>-ISH</strong> Zone</p>
-        <p>Levels 6-7: The <strong>-FUL</strong> Nebula</p>
-        <p>Levels 8-9: The <strong>-LESS</strong> Void</p>
-        <p>Levels 10+: The <strong>-LY</strong> Belt</p>
+        <p>Please identify yourself, Captain.</p>
+        
+        <input type="text" id="player-name" placeholder="ENTER USERNAME" maxlength="12" autocomplete="off">
+        
+        <div style="margin-top: 20px; font-size: 14px; color: #81ecec;">
+            MISSION: Master the Suffixes
+        </div>
+        
         <button class="menu-btn" onclick="startGame()">LAUNCH MISSION</button>
     </div>
 
@@ -144,22 +157,21 @@
         </div>
 
         <div id="virtual-keyboard">
-            </div>
+        </div>
     </div>
 
     <div id="game-over-screen" class="screen-overlay hidden">
         <h1>Mission Complete!</h1>
         <p>You have explored the whole galaxy!</p>
         <h2 id="final-score">Score: 0</h2>
-        <button class="menu-btn" onclick="startGame()">RESTART GALAXY</button>
+        <div id="saving-msg">Transmitting flight data...</div>
+        <button class="menu-btn" onclick="resetGameUI()">RESTART GALAXY</button>
     </div>
 
 <script>
     // --- EXPANDED DATA BANK ---
-    // Groups: 'ish', 'ful', 'less', 'ly'
-    
     const sourceData = [
-        // --- ISH WORDS (Original + New) ---
+        // --- ISH WORDS ---
         { word: "Greenish", def: "Sort of green", sent: "The banana is still ____.", group: "ish" },
         { word: "Reddish", def: "Looks mostly red", sent: "The sunset was ____ orange.", group: "ish" },
         { word: "Smallish", def: "Sort of small", sent: "We need a ____ box.", group: "ish" },
@@ -189,7 +201,7 @@
         { word: "Wildish", def: "A little bit wild", sent: "The garden looks ____.", group: "ish" },
         { word: "Whitish", def: "Sort of white", sent: "The smoke was ____.", group: "ish" },
         
-        // --- FUL WORDS (Full of...) ---
+        // --- FUL WORDS ---
         { word: "Helpful", def: "Full of help", sent: "Thank you for being ____.", group: "ful" },
         { word: "Playful", def: "Full of play", sent: "The puppy is very ____.", group: "ful" },
         { word: "Hopeful", def: "Full of hope", sent: "I am ____ we will win.", group: "ful" },
@@ -203,7 +215,7 @@
         { word: "Wishful", def: "Full of wishes", sent: "That is ____ thinking.", group: "ful" },
         { word: "Useful", def: "Full of use", sent: "This tool is very ____.", group: "ful" },
 
-        // --- LESS WORDS (Without...) ---
+        // --- LESS WORDS ---
         { word: "Fearless", def: "Without fear", sent: "The hero was ____.", group: "less" },
         { word: "Hopeless", def: "Without hope", sent: "The situation felt ____.", group: "less" },
         { word: "Toothless", def: "Without teeth", sent: "The ____ baby smiled.", group: "less" },
@@ -216,7 +228,7 @@
         { word: "Powerless", def: "Without power", sent: "We were ____ to stop it.", group: "less" },
         { word: "Sleepless", def: "Without sleep", sent: "I had a ____ night.", group: "less" },
 
-        // --- LY WORDS (In a way...) ---
+        // --- LY WORDS ---
         { word: "Quickly", def: "In a quick way", sent: "Run ____ to the door!", group: "ly" },
         { word: "Slowly", def: "In a slow way", sent: "The turtle walked ____.", group: "ly" },
         { word: "Loudly", def: "In a loud way", sent: "He shouted ____.", group: "ly" },
@@ -230,7 +242,25 @@
         { word: "Bravely", def: "In a brave way", sent: "He ____ fought the dragon.", group: "ly" }
     ];
 
+    // ==========================================
+    // === GOOGLE FORMS CONFIGURATION SECTION ===
+    // ==========================================
+    // This section has been auto-filled based on your link
+    
+    // Converted to formResponse URL for submission
+    const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSf8CTLRXWtnudAp_w8aHHXFIJTg90r72GRyKihHlVYPf7mi5A/formResponse";
+    
+    // Extracted Entry IDs
+    const FORM_ID_NAME = "entry.367069068";       // Username
+    const FORM_ID_SCORE = "entry.1373567510";     // Score
+    const FORM_ID_MISTAKES = "entry.1389440728";  // Detailed Mistakes
+    const FORM_ID_PROBLEM = "entry.2123758649";   // Problem Area
+
+    // ==========================================
+
     let gameDeck = [];
+    let username = "Unknown";
+    let battleLog = []; // Stores the "Diary" of the game
 
     // --- SETUP ---
     const canvas = document.getElementById('gameCanvas');
@@ -340,6 +370,20 @@
     // --- LOGIC ---
 
     function startGame() {
+        // 1. Capture the input
+        const nameInput = document.getElementById('player-name');
+        const nameVal = nameInput.value.trim();
+
+        // 2. Validate
+        if (nameVal === "") {
+            nameInput.style.borderColor = "#ff7675";
+            nameInput.placeholder = "NAME REQUIRED!";
+            return; 
+        }
+        
+        username = nameVal;
+        battleLog = []; // Reset log for new game
+
         document.getElementById('start-screen').classList.add('hidden');
         document.getElementById('game-over-screen').classList.add('hidden');
         score = 0;
@@ -347,7 +391,7 @@
         currentLevel = 1;
         lastSpellingIndex = -1;
         
-        buildDeck(); // Generate fresh deck order
+        buildDeck();
         
         player.x = width / 2;
         player.y = height - 160;
@@ -358,9 +402,13 @@
         gameState = 'PLAYING';
         gameLoop();
     }
+    
+    function resetGameUI() {
+        document.getElementById('start-screen').classList.remove('hidden');
+        document.getElementById('game-over-screen').classList.add('hidden');
+    }
 
     function loadQuestion() {
-        // Spelling Challenge Trigger
         if (wordIndex > 0 && wordIndex % wordsPerLevel === 0 && wordIndex !== lastSpellingIndex) {
             startSpellingChallenge();
             return;
@@ -382,7 +430,6 @@
         spawnAsteroids(data);
     }
 
-    // --- SPELLING CHALLENGE ---
     function startSpellingChallenge() {
         gameState = 'SPELLING';
         lastSpellingIndex = wordIndex;
@@ -390,7 +437,7 @@
         document.getElementById('ui-layer').style.display = 'none';
         document.getElementById('touch-controls').style.display = 'none';
         
-        const data = gameDeck[wordIndex - 1]; // Use last completed word
+        const data = gameDeck[wordIndex - 1]; 
         targetSpellingWord = data.word.toUpperCase();
         currentTypedWord = "";
         
@@ -467,18 +514,14 @@
         asteroids = []; bullets = []; powerups = [];
         if(Math.random() < 0.3) powerups.push({x: Math.random()*(width-40)+20, y: -300, size: 30, speed: 2});
 
-        // 1 Correct Word + 2 Distractors
         let options = [data.word];
         while(options.length < 3) {
-            // Pick random distractor from ANY group (chaos factor)
             let r = gameDeck[Math.floor(Math.random()*gameDeck.length)].word;
             if(!options.includes(r)) options.push(r);
         }
         options.sort(()=>Math.random()-0.5);
 
-        // Speed increases with Level
         let baseSpeed = 1.5 + (currentLevel * 0.2); 
-        // Cap speed so it's not impossible at Level 10
         if (baseSpeed > 5) baseSpeed = 5;
 
         const sector = width/3;
@@ -513,12 +556,64 @@
         for(let i=0; i<10; i++) particles.push({x:x, y:y, vx:(Math.random()-0.5)*10, vy:(Math.random()-0.5)*10, life:1, color:color});
     }
 
+    // --- DATA TRACKING & REPORTING ---
+    
+    function analyzePerformance() {
+        let mistakes = battleLog.filter(entry => entry.result === "WRONG");
+        let mistakeText = mistakes.map(m => `${m.word} (-${m.group})`).join(", ");
+        if (mistakeText === "") mistakeText = "None! Perfect Run.";
+
+        let counts = { ish: 0, ful: 0, less: 0, ly: 0 };
+        mistakes.forEach(m => {
+            if (counts[m.group] !== undefined) counts[m.group]++;
+        });
+
+        let maxErrors = 0;
+        let worstGroup = "None";
+        for (const [group, count] of Object.entries(counts)) {
+            if (count > maxErrors) {
+                maxErrors = count;
+                worstGroup = "-" + group.toUpperCase();
+            }
+        }
+
+        return { mistakeText, worstGroup };
+    }
+
+    function sendScoreToGoogleSheets() {
+        const report = analyzePerformance();
+        
+        // VISUAL FEEDBACK
+        document.getElementById('saving-msg').style.display = 'block';
+
+        const formData = new FormData();
+        formData.append(FORM_ID_NAME, username);
+        formData.append(FORM_ID_SCORE, score);
+        formData.append(FORM_ID_MISTAKES, report.mistakeText);
+        formData.append(FORM_ID_PROBLEM, report.worstGroup);
+
+        fetch(GOOGLE_FORM_URL, {
+            method: "POST",
+            body: formData,
+            mode: "no-cors"
+        }).then(() => {
+            console.log("Report sent!");
+            document.getElementById('saving-msg').innerText = "Data Transmitted Successfully!";
+            document.getElementById('saving-msg').style.color = "#00b894";
+        }).catch(err => {
+            console.error("Error", err);
+            document.getElementById('saving-msg').innerText = "Transmission Failed.";
+        });
+    }
+
     function endGame() {
         gameState = 'GAMEOVER';
         document.getElementById('ui-layer').style.display = 'none';
         document.getElementById('touch-controls').style.display = 'none';
         document.getElementById('game-over-screen').classList.remove('hidden');
         document.getElementById('final-score').innerText = "Score: " + score;
+        
+        sendScoreToGoogleSheets();
     }
 
     function update() {
@@ -553,9 +648,13 @@
                     bullets.splice(j,1);
                     spawnParticles(a.x+a.w/2, a.y+a.h/2, a.isCorrect?'#00b894':'#d63031');
                     if(a.isCorrect) {
-                        playSound('win'); score+=10; wordIndex++; loadQuestion(); return;
+                        playSound('win'); 
+                        battleLog.push({ word: a.text, group: gameDeck[wordIndex].group, result: "CORRECT" });
+                        score+=10; wordIndex++; loadQuestion(); return;
                     } else {
-                        playSound('type'); asteroids.splice(i,1); 
+                        playSound('type'); 
+                        battleLog.push({ word: a.text, group: gameDeck[wordIndex].group, result: "WRONG" });
+                        asteroids.splice(i,1); 
                     }
                 }
             }
