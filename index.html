@@ -20,9 +20,11 @@
         #top-hud {
             width: 100%; padding: 15px; background: rgba(0, 0, 0, 0.8);
             text-align: center; border-bottom: 2px solid #00d2d3; box-sizing: border-box;
+            position: relative;
         }
 
         #level-indicator { color: #ff9ff3; font-weight: bold; font-size: 18px; margin-bottom: 5px; }
+        #lives-display { font-size: 24px; margin-bottom: 5px; text-shadow: 0 0 5px red; }
         #question-text { font-size: 22px; color: #54a0ff; font-weight: bold; text-shadow: 0 0 10px #54a0ff; }
         #sentence-hint { font-size: 16px; font-style: italic; color: #c8d6e5; margin-top: 5px; }
         
@@ -30,6 +32,16 @@
             position: absolute; top: 15px; right: 20px;
             font-size: 20px; color: #feca57; font-weight: bold;
         }
+
+        /* NEW QUIT BUTTON */
+        #quit-btn {
+            position: absolute; top: 15px; left: 15px; pointer-events: auto;
+            background: rgba(214, 48, 49, 0.8); border: 1px solid #ff7675;
+            color: white; padding: 8px 12px; cursor: pointer; border-radius: 5px;
+            font-family: inherit; font-weight: bold; font-size: 12px;
+            text-transform: uppercase; transition: 0.2s;
+        }
+        #quit-btn:active { transform: scale(0.95); background: #ff7675; }
 
         /* --- CONTROLS --- */
         #touch-controls {
@@ -116,11 +128,13 @@
 
     <div id="ui-layer">
         <div id="top-hud">
+            <button id="quit-btn" onclick="endGame()">⚠ ABORT & SAVE</button>
             <div id="level-indicator">LEVEL 1</div>
+            <div id="lives-display">❤️❤️❤️</div>
             <div id="question-text">Loading...</div>
             <div id="sentence-hint">Prepare for launch</div>
+            <div id="score-display">0</div>
         </div>
-        <div id="score-display">0</div>
         <div id="powerup-msg">DUAL BLASTERS! ⭐</div>
     </div>
 
@@ -245,7 +259,6 @@
     // ==========================================
     // === GOOGLE FORMS CONFIGURATION SECTION ===
     // ==========================================
-    // This section has been auto-filled based on your link
     
     // Converted to formResponse URL for submission
     const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSf8CTLRXWtnudAp_w8aHHXFIJTg90r72GRyKihHlVYPf7mi5A/formResponse";
@@ -261,6 +274,7 @@
     let gameDeck = [];
     let username = "Unknown";
     let battleLog = []; // Stores the "Diary" of the game
+    let lives = 3;
 
     // --- SETUP ---
     const canvas = document.getElementById('gameCanvas');
@@ -389,8 +403,10 @@
         score = 0;
         wordIndex = 0;
         currentLevel = 1;
+        lives = 3;
         lastSpellingIndex = -1;
         
+        updateLivesDisplay();
         buildDeck();
         
         player.x = width / 2;
@@ -406,6 +422,14 @@
     function resetGameUI() {
         document.getElementById('start-screen').classList.remove('hidden');
         document.getElementById('game-over-screen').classList.add('hidden');
+    }
+
+    function updateLivesDisplay() {
+        let hearts = "❤️❤️❤️";
+        if (lives === 2) hearts = "❤️❤️";
+        if (lives === 1) hearts = "❤️";
+        if (lives <= 0) hearts = "💀";
+        document.getElementById('lives-display').innerText = hearts;
     }
 
     function loadQuestion() {
@@ -658,9 +682,21 @@
                     }
                 }
             }
+            // COLLISION WITH SHIP
             if(player.x<a.x+a.w && player.x>a.x && player.y<a.y+a.h && player.y>a.y) {
                  playSound('type'); spawnParticles(player.x, player.y, 'red');
-                 player.powerupTime=0; spawnAsteroids(gameDeck[wordIndex]); return;
+                 
+                 // NEW LIVES LOGIC
+                 lives--;
+                 updateLivesDisplay();
+                 
+                 if(lives <= 0) {
+                     endGame();
+                 } else {
+                     player.powerupTime=0; 
+                     spawnAsteroids(gameDeck[wordIndex]); 
+                 }
+                 return;
             }
         }
         if(asteroids.length===0 && gameState==='PLAYING') spawnAsteroids(gameDeck[wordIndex]);
