@@ -243,11 +243,18 @@
         { word: "Bravely", def: "In a brave way", sent: "He ____ fought the dragon.", group: "ly" }
     ];
 
+    // ==========================================
+    // === GOOGLE FORMS CONFIGURATION SECTION ===
+    // ==========================================
+    
     const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSf8CTLRXWtnudAp_w8aHHXFIJTg90r72GRyKihHlVYPf7mi5A/formResponse";
+    
     const FORM_ID_NAME = "entry.367069068";     
     const FORM_ID_SCORE = "entry.1373567510";   
     const FORM_ID_MISTAKES = "entry.1389440728";
     const FORM_ID_PROBLEM = "entry.2123758649"; 
+
+    // ==========================================
 
     let gameDeck = [];
     let username = "Unknown";
@@ -286,6 +293,14 @@
             osc.type = 'triangle'; osc.frequency.setValueAtTime(400, now); osc.frequency.setValueAtTime(600, now+0.1);
             gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now+0.3);
             osc.start(); osc.stop(now+0.3);
+        } else if (type === 'collect') { 
+            osc.type = 'sine'; osc.frequency.setValueAtTime(400, now); osc.frequency.linearRampToValueAtTime(800, now+0.2);
+            gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now+0.2);
+            osc.start(); osc.stop(now+0.2);
+        } else if (type === 'shield') {
+            osc.type = 'square'; osc.frequency.setValueAtTime(150, now); osc.frequency.linearRampToValueAtTime(300, now+0.3);
+            gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now+0.3);
+            osc.start(); osc.stop(now+0.3);
         }
     }
 
@@ -300,12 +315,21 @@
     let targetSpellingWord = "";
     let currentTypedWord = "";
 
-    const player = { x: 0, y: 0, w: 50, h: 50, speed: 6, color: '#00d2d3', powerupTime: 0 };
+    // UPDATED PLAYER OBJECT
+    const player = { 
+        x: 0, y: 0, w: 50, h: 50, 
+        baseSpeed: 6, speed: 6, 
+        color: '#00d2d3', 
+        powerupTime: 0, 
+        speedBoostTimer: 0, // NEW
+        shielded: false     // NEW
+    };
+    
     let bullets = [];
     let asteroids = [];
     let particles = [];
     let stars = [];
-    let powerups = [];
+    let powerups = []; 
     const keys = { left: false, right: false };
 
     // --- INPUT BINDING ---
@@ -367,6 +391,12 @@
         currentLevel = 1;
         lives = 3;
         lastSpellingIndex = -1;
+        
+        // Reset player status
+        player.shielded = false;
+        player.speedBoostTimer = 0;
+        player.powerupTime = 0;
+        
         updateLivesDisplay();
         buildDeck();
         player.x = width / 2;
@@ -384,11 +414,10 @@
     }
 
     function updateLivesDisplay() {
-        let hearts = "❤️❤️❤️";
-        if (lives === 2) hearts = "❤️❤️";
-        if (lives === 1) hearts = "❤️";
-        if (lives <= 0) hearts = "💀";
-        document.getElementById('lives-display').innerText = hearts;
+        let display = "";
+        for(let i=0; i<lives; i++) display += "❤️";
+        if(lives === 0) display = "💀";
+        document.getElementById('lives-display').innerText = display;
     }
 
     function loadQuestion() {
@@ -486,16 +515,23 @@
     }
 
     function spawnAsteroids(data) {
-        asteroids = []; bullets = []; powerups = [];
-        if(Math.random() < 0.3) powerups.push({x: Math.random()*(width-40)+20, y: -300, size: 30, speed: 2});
+        asteroids = []; bullets = []; 
+        
+        // SPAWN COLLECTIBLES
+        trySpawnCollectibles();
+
         let options = [data.word];
         while(options.length < 3) {
             let r = gameDeck[Math.floor(Math.random()*gameDeck.length)].word;
             if(!options.includes(r)) options.push(r);
         }
         options.sort(()=>Math.random()-0.5);
-        let baseSpeed = 1.5 + (currentLevel * 0.2); 
-        if (baseSpeed > 5) baseSpeed = 5;
+
+        // --- NEW: PROGRESSIVE DIFFICULTY (10% increase per level) ---
+        let levelMultiplier = Math.pow(1.1, currentLevel - 1);
+        let baseSpeed = 2 * levelMultiplier;
+        if (baseSpeed > 8) baseSpeed = 8; // Cap limit
+
         const sector = width/3;
         options.forEach((word, i) => {
             asteroids.push({
@@ -505,6 +541,35 @@
                 wobble: currentLevel > 5 ? Math.random()*0.05 : 0
             });
         });
+    }
+
+    function trySpawnCollectibles() {
+        // Roll for items
+        let rand = Math.random();
+        
+        // 1. Dual Blaster (Yellow) - 20% chance
+        if (rand < 0.2) {
+             powerups.push({x: Math.random()*(width-40)+20, y: -300, size: 30, speed: 2, type: 'GUN', color: '#f1c40f', symbol: ''});
+             return;
+        }
+        
+        // 2. Heart (Red) - 5% chance
+        if (rand < 0.25) {
+             powerups.push({x: Math.random()*(width-40)+20, y: -300, size: 30, speed: 3, type: 'HEART', color: '#ff7675', symbol: '+'});
+             return;
+        }
+
+        // 3. Speed Boost (Cyan) - 5% chance [NEW]
+        if (rand < 0.30) {
+             powerups.push({x: Math.random()*(width-40)+20, y: -300, size: 30, speed: 4, type: 'SPEED', color: '#00d2d3', symbol: '⚡'});
+             return;
+        }
+
+        // 4. Shield (Purple) - 2% chance [NEW RARE]
+        if (rand < 0.32) {
+             powerups.push({x: Math.random()*(width-40)+20, y: -300, size: 30, speed: 2, type: 'SHIELD', color: '#a29bfe', symbol: '🛡️'});
+             return;
+        }
     }
 
     function fireBullet() {
@@ -518,10 +583,28 @@
         }
     }
 
-    function activatePowerup() {
-        player.powerupTime = 300; 
+    function activatePowerup(p) {
         const msg = document.getElementById('powerup-msg');
         msg.style.display = 'block'; msg.style.animation = 'none'; msg.offsetHeight; msg.style.animation = 'blink 1.5s forwards';
+
+        if (p.type === 'GUN') {
+            player.powerupTime = 300; 
+            msg.innerText = "DUAL BLASTERS! ⭐";
+        } else if (p.type === 'HEART') {
+            lives++;
+            if(lives > 5) lives = 5;
+            updateLivesDisplay();
+            playSound('collect');
+            msg.innerText = "EXTRA LIFE! ❤️";
+        } else if (p.type === 'SPEED') {
+            player.speedBoostTimer = 300; // 5 Seconds
+            playSound('warp');
+            msg.innerText = "SPEED BOOST! ⚡";
+        } else if (p.type === 'SHIELD') {
+            player.shielded = true;
+            playSound('shield');
+            msg.innerText = "SHIELD UP! 🛡️";
+        }
     }
 
     function spawnParticles(x, y, color) {
@@ -547,40 +630,49 @@
         return { mistakeText, worstGroup };
     }
 
-    function getFormData() {
-        const report = analyzePerformance();
-        const formData = new FormData();
-        formData.append(FORM_ID_NAME, username);
-        formData.append(FORM_ID_SCORE, score);
-        formData.append(FORM_ID_MISTAKES, report.mistakeText);
-        formData.append(FORM_ID_PROBLEM, report.worstGroup);
-        return formData;
-    }
-
     function sendScoreToGoogleSheets() {
+        const report = analyzePerformance();
+        
         document.getElementById('saving-msg').style.display = 'block';
-        fetch(GOOGLE_FORM_URL, {
-            method: "POST",
-            body: getFormData(),
-            mode: "no-cors"
-        }).then(() => {
-            console.log("Report sent!");
+        document.getElementById('saving-msg').innerText = "Sending Data...";
+
+        let iframe = document.getElementById("hidden_iframe");
+        if (!iframe) {
+            iframe = document.createElement("iframe");
+            iframe.name = "hidden_iframe";
+            iframe.id = "hidden_iframe";
+            iframe.style.display = "none";
+            document.body.appendChild(iframe);
+        }
+
+        const form = document.createElement("form");
+        form.action = GOOGLE_FORM_URL;
+        form.method = "POST";
+        form.target = "hidden_iframe";
+        form.style.display = "none";
+
+        function createInput(name, value) {
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = name;
+            input.value = value;
+            form.appendChild(input);
+        }
+
+        createInput(FORM_ID_NAME, username);
+        createInput(FORM_ID_SCORE, score);
+        createInput(FORM_ID_MISTAKES, report.mistakeText);
+        createInput(FORM_ID_PROBLEM, report.worstGroup);
+
+        document.body.appendChild(form);
+        form.submit();
+        
+        setTimeout(() => {
             document.getElementById('saving-msg').innerText = "Data Transmitted Successfully!";
             document.getElementById('saving-msg').style.color = "#00b894";
-        }).catch(err => {
-            console.error("Error", err);
-            document.getElementById('saving-msg').innerText = "Transmission Failed.";
-        });
+            document.body.removeChild(form); 
+        }, 1000);
     }
-
-    // --- SAFETY NET: AUTO-SEND ON CLOSE ---
-    // If user closes tab, refreshes, or switches apps on mobile
-    document.addEventListener("visibilitychange", function() {
-        if (document.visibilityState === 'hidden' && gameState === 'PLAYING' && username !== "Unknown") {
-            // Use Beacon to send data reliably even as the page dies
-            navigator.sendBeacon(GOOGLE_FORM_URL, getFormData());
-        }
-    });
 
     function endGame() {
         gameState = 'GAMEOVER';
@@ -591,56 +683,113 @@
         sendScoreToGoogleSheets();
     }
 
+    function playerTakeDamage() {
+        if (player.shielded) {
+            player.shielded = false;
+            playSound('shield'); // Deactivate sound
+            spawnParticles(player.x, player.y, '#a29bfe'); // Purple Shield pop
+            return; // IGNORE DAMAGE
+        }
+
+        lives--;
+        updateLivesDisplay();
+        playSound('type'); 
+        spawnParticles(player.x, player.y, 'red');
+
+        if(lives <= 0) {
+            endGame();
+        } else {
+            // Respawn logic or reset powerups if needed
+            player.powerupTime=0; 
+        }
+    }
+
     function update() {
         if(gameState !== 'PLAYING') return; 
 
+        // Handle Speed Boost Logic
+        if (player.speedBoostTimer > 0) {
+            player.speed = player.baseSpeed * 2; // Double speed!
+            player.speedBoostTimer--;
+            // Spawn Trail Particles
+            if (player.speedBoostTimer % 5 === 0) {
+                particles.push({x:player.x, y:player.y+20, vx:0, vy:5, life:0.5, color: '#00d2d3'});
+            }
+        } else {
+            player.speed = player.baseSpeed;
+        }
+
         if(player.powerupTime>0) player.powerupTime--;
+
         if(keys.left && player.x>50) player.x-=player.speed;
         if(keys.right && player.x<width-50) player.x+=player.speed;
 
+        // Bullets
         for(let i=bullets.length-1; i>=0; i--) {
             bullets[i].y-=bullets[i].speed;
             if(bullets[i].y<0) bullets.splice(i,1);
         }
 
+        // Powerups / Collectibles
         for(let i=powerups.length-1; i>=0; i--) {
             let p = powerups[i]; p.y+=p.speed;
             if(Math.hypot(player.x-p.x, player.y-p.y) < (player.w/2+p.size)) {
-                activatePowerup(); powerups.splice(i,1); continue;
+                activatePowerup(p); powerups.splice(i,1); continue;
             }
             if(p.y>height) powerups.splice(i,1);
+
+            // Bullet hits powerup (destroy it accident)
+            for(let j=bullets.length-1; j>=0; j--) {
+                let b = bullets[j];
+                if(b.x>p.x-15 && b.x<p.x+15 && b.y>p.y-15 && b.y<p.y+15) {
+                    bullets.splice(j,1);
+                    powerups.splice(i,1); 
+                    spawnParticles(p.x, p.y, '#ff7675');
+                    break;
+                }
+            }
         }
 
+        // Asteroids
         for(let i=asteroids.length-1; i>=0; i--) {
             let a = asteroids[i]; a.y+=a.speed;
             if(a.wobble) a.x+=Math.sin(a.y*0.05)*2; 
             
-            if(a.y>height) { asteroids.splice(i,1); continue; }
+            // Missed correct word
+            if(a.y > height) {
+                if(a.isCorrect) {
+                    playerTakeDamage(); // Lose life or shield
+                    if(lives > 0) spawnAsteroids(gameDeck[wordIndex]); // Reset wave
+                    return;
+                }
+                asteroids.splice(i,1);
+                continue;
+            }
 
             for(let j=bullets.length-1; j>=0; j--) {
                 let b = bullets[j];
                 if(b.x>a.x && b.x<a.x+a.w && b.y>a.y && b.y<a.y+a.h) {
                     bullets.splice(j,1);
                     spawnParticles(a.x+a.w/2, a.y+a.h/2, a.isCorrect?'#00b894':'#d63031');
+                    
                     if(a.isCorrect) {
+                        // HIT CORRECT
                         playSound('win'); 
                         battleLog.push({ word: a.text, group: gameDeck[wordIndex].group, result: "CORRECT" });
                         score+=10; wordIndex++; loadQuestion(); return;
                     } else {
-                        playSound('type'); 
+                        // HIT WRONG
                         battleLog.push({ word: a.text, group: gameDeck[wordIndex].group, result: "WRONG" });
                         asteroids.splice(i,1); 
+                        playerTakeDamage();
+                        return;
                     }
                 }
             }
+            // Collision Ship <-> Asteroid
             if(player.x<a.x+a.w && player.x>a.x && player.y<a.y+a.h && player.y>a.y) {
-                 playSound('type'); spawnParticles(player.x, player.y, 'red');
-                 lives--;
-                 updateLivesDisplay();
-                 
-                 if(lives <= 0) {
-                     endGame();
-                 } else {
+                 playerTakeDamage();
+                 if(lives > 0) {
                      player.powerupTime=0; 
                      spawnAsteroids(gameDeck[wordIndex]); 
                  }
@@ -659,13 +808,26 @@
 
         if(gameState !== 'PLAYING' && gameState !== 'SPELLING') return;
 
+        // Draw Collectibles
         powerups.forEach(p=>{
-            ctx.fillStyle='#f1c40f'; ctx.beginPath(); ctx.arc(p.x, p.y, p.size/2, 0, Math.PI*2); ctx.fill();
-            ctx.shadowBlur=15; ctx.shadowColor="gold"; ctx.fill(); ctx.shadowBlur=0;
+            ctx.fillStyle=p.color; 
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.size/2, 0, Math.PI*2); ctx.fill();
+            ctx.shadowBlur=15; ctx.shadowColor=p.color; ctx.fill(); ctx.shadowBlur=0;
+            if(p.symbol) {
+                ctx.fillStyle='white'; ctx.font='bold 20px Arial'; ctx.fillText(p.symbol, p.x-10, p.y+7);
+            }
         });
 
         if (gameState === 'PLAYING') {
             ctx.save(); ctx.translate(player.x, player.y);
+            
+            // Draw Shield if Active
+            if (player.shielded) {
+                ctx.strokeStyle = '#a29bfe'; ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.arc(0, 0, 40, 0, Math.PI*2); ctx.stroke();
+                ctx.fillStyle = 'rgba(162, 155, 254, 0.2)'; ctx.fill();
+            }
+
             ctx.fillStyle = player.powerupTime>0 ? '#f1c40f' : player.color;
             ctx.beginPath(); ctx.moveTo(0,-30); ctx.lineTo(20,20); ctx.lineTo(-20,20); ctx.fill();
             ctx.fillStyle='orange'; ctx.beginPath(); ctx.moveTo(-10,20); ctx.lineTo(0,35+Math.random()*10); ctx.lineTo(10,20); ctx.fill();
