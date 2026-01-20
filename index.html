@@ -18,26 +18,45 @@
         }
 
         #top-hud {
-            width: 100%; padding: 15px; background: rgba(0, 0, 0, 0.8);
-            text-align: center; border-bottom: 2px solid #00d2d3; box-sizing: border-box;
+            width: 100%; 
+            padding: 10px; /* Reduced padding */
+            background: rgba(0, 0, 0, 0.85);
+            text-align: center; 
+            border-bottom: 2px solid #00d2d3; 
+            box-sizing: border-box;
             position: relative;
+            z-index: 10;
         }
 
-        #level-indicator { color: #ff9ff3; font-weight: bold; font-size: 18px; margin-bottom: 5px; }
-        #lives-display { font-size: 24px; margin-bottom: 5px; text-shadow: 0 0 5px red; }
-        #question-text { font-size: 22px; color: #54a0ff; font-weight: bold; text-shadow: 0 0 10px #54a0ff; }
-        #sentence-hint { font-size: 16px; font-style: italic; color: #c8d6e5; margin-top: 5px; }
+        #level-indicator { color: #ff9ff3; font-weight: bold; font-size: 16px; margin-bottom: 2px; }
+        #lives-display { font-size: 20px; margin-bottom: 5px; text-shadow: 0 0 5px red; }
+        
+        /* Adjusted Font Sizes for Visibility */
+        #question-text { 
+            font-size: 20px; 
+            color: #54a0ff; 
+            font-weight: bold; 
+            text-shadow: 0 0 10px #54a0ff; 
+            margin: 5px 0;
+            line-height: 1.2;
+        }
+        #sentence-hint { 
+            font-size: 14px; 
+            font-style: italic; 
+            color: #c8d6e5; 
+            margin-top: 5px; 
+        }
         
         #score-display {
-            position: absolute; top: 15px; right: 20px;
-            font-size: 20px; color: #feca57; font-weight: bold;
+            position: absolute; top: 10px; right: 15px;
+            font-size: 18px; color: #feca57; font-weight: bold;
         }
 
         #quit-btn {
-            position: absolute; top: 15px; left: 15px; pointer-events: auto;
+            position: absolute; top: 10px; left: 10px; pointer-events: auto;
             background: rgba(214, 48, 49, 0.8); border: 1px solid #ff7675;
-            color: white; padding: 8px 12px; cursor: pointer; border-radius: 5px;
-            font-family: inherit; font-weight: bold; font-size: 12px;
+            color: white; padding: 5px 10px; cursor: pointer; border-radius: 5px;
+            font-family: inherit; font-weight: bold; font-size: 11px;
             text-transform: uppercase; transition: 0.2s;
         }
         #quit-btn:active { transform: scale(0.95); background: #ff7675; }
@@ -260,7 +279,7 @@
     let username = "Unknown";
     let battleLog = [];
     let lives = 3;
-    let powerupMsgTimer = null; // Fix for persistent message
+    let powerupMsgTimer = null; 
 
     // --- SETUP ---
     const canvas = document.getElementById('gameCanvas');
