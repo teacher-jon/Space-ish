@@ -315,14 +315,13 @@
     let targetSpellingWord = "";
     let currentTypedWord = "";
 
-    // UPDATED PLAYER OBJECT
     const player = { 
         x: 0, y: 0, w: 50, h: 50, 
         baseSpeed: 6, speed: 6, 
         color: '#00d2d3', 
         powerupTime: 0, 
-        speedBoostTimer: 0, // NEW
-        shielded: false     // NEW
+        speedBoostTimer: 0, 
+        shielded: false     
     };
     
     let bullets = [];
@@ -392,7 +391,6 @@
         lives = 3;
         lastSpellingIndex = -1;
         
-        // Reset player status
         player.shielded = false;
         player.speedBoostTimer = 0;
         player.powerupTime = 0;
@@ -527,10 +525,10 @@
         }
         options.sort(()=>Math.random()-0.5);
 
-        // --- NEW: PROGRESSIVE DIFFICULTY (10% increase per level) ---
+        // DIFFICULTY PROGRESSION (10% faster per level)
         let levelMultiplier = Math.pow(1.1, currentLevel - 1);
         let baseSpeed = 2 * levelMultiplier;
-        if (baseSpeed > 8) baseSpeed = 8; // Cap limit
+        if (baseSpeed > 8) baseSpeed = 8; 
 
         const sector = width/3;
         options.forEach((word, i) => {
@@ -544,29 +542,29 @@
     }
 
     function trySpawnCollectibles() {
-        // Roll for items
+        // Slightly Increased rates for fun
         let rand = Math.random();
         
-        // 1. Dual Blaster (Yellow) - 20% chance
+        // 1. Dual Blaster (Yellow) - 20%
         if (rand < 0.2) {
              powerups.push({x: Math.random()*(width-40)+20, y: -300, size: 30, speed: 2, type: 'GUN', color: '#f1c40f', symbol: ''});
              return;
         }
         
-        // 2. Heart (Red) - 5% chance
-        if (rand < 0.25) {
+        // 2. Heart (Red) - 10%
+        if (rand < 0.3) {
              powerups.push({x: Math.random()*(width-40)+20, y: -300, size: 30, speed: 3, type: 'HEART', color: '#ff7675', symbol: '+'});
              return;
         }
 
-        // 3. Speed Boost (Cyan) - 5% chance [NEW]
-        if (rand < 0.30) {
+        // 3. Speed Boost (Cyan) - 10%
+        if (rand < 0.4) {
              powerups.push({x: Math.random()*(width-40)+20, y: -300, size: 30, speed: 4, type: 'SPEED', color: '#00d2d3', symbol: '⚡'});
              return;
         }
 
-        // 4. Shield (Purple) - 2% chance [NEW RARE]
-        if (rand < 0.32) {
+        // 4. Shield (Purple) - 5%
+        if (rand < 0.45) {
              powerups.push({x: Math.random()*(width-40)+20, y: -300, size: 30, speed: 2, type: 'SHIELD', color: '#a29bfe', symbol: '🛡️'});
              return;
         }
@@ -597,7 +595,7 @@
             playSound('collect');
             msg.innerText = "EXTRA LIFE! ❤️";
         } else if (p.type === 'SPEED') {
-            player.speedBoostTimer = 300; // 5 Seconds
+            player.speedBoostTimer = 300; 
             playSound('warp');
             msg.innerText = "SPEED BOOST! ⚡";
         } else if (p.type === 'SHIELD') {
@@ -686,9 +684,9 @@
     function playerTakeDamage() {
         if (player.shielded) {
             player.shielded = false;
-            playSound('shield'); // Deactivate sound
-            spawnParticles(player.x, player.y, '#a29bfe'); // Purple Shield pop
-            return; // IGNORE DAMAGE
+            playSound('shield');
+            spawnParticles(player.x, player.y, '#a29bfe');
+            return;
         }
 
         lives--;
@@ -699,7 +697,6 @@
         if(lives <= 0) {
             endGame();
         } else {
-            // Respawn logic or reset powerups if needed
             player.powerupTime=0; 
         }
     }
@@ -707,11 +704,10 @@
     function update() {
         if(gameState !== 'PLAYING') return; 
 
-        // Handle Speed Boost Logic
+        // Speed Boost Logic
         if (player.speedBoostTimer > 0) {
-            player.speed = player.baseSpeed * 2; // Double speed!
+            player.speed = player.baseSpeed * 2;
             player.speedBoostTimer--;
-            // Spawn Trail Particles
             if (player.speedBoostTimer % 5 === 0) {
                 particles.push({x:player.x, y:player.y+20, vx:0, vy:5, life:0.5, color: '#00d2d3'});
             }
@@ -733,18 +729,21 @@
         // Powerups / Collectibles
         for(let i=powerups.length-1; i>=0; i--) {
             let p = powerups[i]; p.y+=p.speed;
+            
+            // 1. COLLECT BY SHIP
             if(Math.hypot(player.x-p.x, player.y-p.y) < (player.w/2+p.size)) {
                 activatePowerup(p); powerups.splice(i,1); continue;
             }
             if(p.y>height) powerups.splice(i,1);
 
-            // Bullet hits powerup (destroy it accident)
+            // 2. COLLECT BY BULLET (SHOOT TO COLLECT)
             for(let j=bullets.length-1; j>=0; j--) {
                 let b = bullets[j];
-                if(b.x>p.x-15 && b.x<p.x+15 && b.y>p.y-15 && b.y<p.y+15) {
-                    bullets.splice(j,1);
-                    powerups.splice(i,1); 
-                    spawnParticles(p.x, p.y, '#ff7675');
+                // Check if bullet hits the powerup
+                if(b.x>p.x-20 && b.x<p.x+20 && b.y>p.y-20 && b.y<p.y+20) {
+                    bullets.splice(j,1); // Remove bullet
+                    activatePowerup(p);  // TRIGGER BONUS!
+                    powerups.splice(i,1); // Remove powerup
                     break;
                 }
             }
@@ -758,8 +757,8 @@
             // Missed correct word
             if(a.y > height) {
                 if(a.isCorrect) {
-                    playerTakeDamage(); // Lose life or shield
-                    if(lives > 0) spawnAsteroids(gameDeck[wordIndex]); // Reset wave
+                    playerTakeDamage();
+                    if(lives > 0) spawnAsteroids(gameDeck[wordIndex]); 
                     return;
                 }
                 asteroids.splice(i,1);
