@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Galaxy Explorer: Suffix Edition</title>
+    <title>Galaxy Explorer: Final Fix v2</title>
     <style>
         body {
             margin: 0; overflow: hidden; background-color: #0d0e15;
@@ -15,125 +15,116 @@
         #ui-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; display: flex; flex-direction: column; align-items: center;
+            z-index: 10;
         }
 
         #top-hud {
-            width: 100%; 
-            padding: 10px; /* Reduced padding */
-            background: rgba(0, 0, 0, 0.85);
-            text-align: center; 
-            border-bottom: 2px solid #00d2d3; 
-            box-sizing: border-box;
-            position: relative;
-            z-index: 10;
+            width: 100%; padding: 10px; background: rgba(0, 0, 0, 0.85);
+            text-align: center; border-bottom: 2px solid #00d2d3; 
+            box-sizing: border-box; position: relative; pointer-events: auto;
         }
 
         #level-indicator { color: #ff9ff3; font-weight: bold; font-size: 16px; margin-bottom: 2px; }
         #lives-display { font-size: 20px; margin-bottom: 5px; text-shadow: 0 0 5px red; }
         
-        /* Adjusted Font Sizes for Visibility */
         #question-text { 
-            font-size: 20px; 
-            color: #54a0ff; 
-            font-weight: bold; 
-            text-shadow: 0 0 10px #54a0ff; 
-            margin: 5px 0;
-            line-height: 1.2;
+            font-size: 20px; color: #54a0ff; font-weight: bold; 
+            text-shadow: 0 0 10px #54a0ff; margin: 5px 0; line-height: 1.2;
         }
-        #sentence-hint { 
-            font-size: 14px; 
-            font-style: italic; 
-            color: #c8d6e5; 
-            margin-top: 5px; 
-        }
-        
-        #score-display {
-            position: absolute; top: 10px; right: 15px;
-            font-size: 18px; color: #feca57; font-weight: bold;
-        }
-
+        #sentence-hint { font-size: 14px; font-style: italic; color: #c8d6e5; margin-top: 5px; }
+        #score-display { position: absolute; top: 10px; right: 15px; font-size: 18px; color: #feca57; font-weight: bold; }
         #quit-btn {
             position: absolute; top: 10px; left: 10px; pointer-events: auto;
             background: rgba(214, 48, 49, 0.8); border: 1px solid #ff7675;
             color: white; padding: 5px 10px; cursor: pointer; border-radius: 5px;
             font-family: inherit; font-weight: bold; font-size: 11px;
-            text-transform: uppercase; transition: 0.2s;
+            text-transform: uppercase;
         }
-        #quit-btn:active { transform: scale(0.95); background: #ff7675; }
 
+        /* --- CONTROLS --- */
         #touch-controls {
-            position: absolute; bottom: 20px; left: 0; width: 100%; height: 120px;
-            pointer-events: auto; display: flex; justify-content: space-between;
-            padding: 0 40px; box-sizing: border-box; z-index: 50;
+            position: absolute; bottom: 20px; left: 0; width: 100%; height: 180px;
+            pointer-events: auto; display: flex; justify-content: space-between; align-items: flex-end;
+            padding: 0 30px; box-sizing: border-box; 
+            z-index: 20; 
         }
-
+        #d-pad {
+            display: grid; grid-template-columns: 60px 60px 60px; grid-template-rows: 60px 60px;
+            gap: 5px; align-items: center; justify-items: center;
+        }
         .touch-btn {
-            background: rgba(255, 255, 255, 0.2); border: 2px solid rgba(255, 255, 255, 0.5);
-            border-radius: 50%; width: 80px; height: 80px;
+            background: rgba(255, 255, 255, 0.15); border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px; width: 100%; height: 100%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 30px; color: white; cursor: pointer; transition: background 0.1s;
+            font-size: 24px; color: white; cursor: pointer;
         }
-        .touch-btn:active, .touch-btn.pressed { background: rgba(84, 160, 255, 0.6); transform: scale(0.95); }
-        #fire-btn { background: rgba(238, 82, 83, 0.3); border-color: #ee5253; width: 90px; height: 90px; }
+        .touch-btn:active, .touch-btn.pressed { background: rgba(84, 160, 255, 0.6); transform: scale(0.95); border-color: #54a0ff;}
+        #btn-up { grid-column: 2; grid-row: 1; }
+        #btn-left { grid-column: 1; grid-row: 2; }
+        #btn-down { grid-column: 2; grid-row: 2; }
+        #btn-right { grid-column: 3; grid-row: 2; }
+        #fire-btn { 
+            background: rgba(238, 82, 83, 0.3); border-color: #ee5253; 
+            width: 90px; height: 90px; border-radius: 50%; font-size: 30px; margin-bottom: 15px;
+        }
         #fire-btn:active, #fire-btn.pressed { background: rgba(238, 82, 83, 0.8); }
 
+        /* --- SCREENS --- */
         .screen-overlay {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(16, 20, 30, 0.95); padding: 30px; border-radius: 20px;
+            background: rgba(16, 20, 30, 0.98); padding: 25px; border-radius: 20px;
             border: 4px solid #54a0ff; text-align: center; pointer-events: auto;
-            z-index: 100; width: 80%; max-width: 500px;
+            z-index: 9999;
+            width: 85%; max-width: 600px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
         }
         .hidden { display: none !important; }
         
         button.menu-btn {
             background: #00d2d3; color: #2d3436; border: none; padding: 15px 30px;
-            font-size: 20px; font-weight: bold; cursor: pointer; border-radius: 50px;
+            font-size: 18px; font-weight: bold; cursor: pointer; border-radius: 50px;
             margin-top: 20px; font-family: inherit; width: 100%;
+            border: 2px solid white;
         }
-        button.menu-btn:active { transform: scale(0.95); }
-        
+        button.menu-btn:active { transform: scale(0.95); background: #55efc4; }
+
         #player-name {
             background: rgba(0, 0, 0, 0.5); border: 2px solid #00d2d3;
             color: #00d2d3; font-family: 'Courier New', Courier, monospace;
             font-size: 24px; padding: 10px; text-align: center; width: 80%;
             border-radius: 10px; outline: none; text-transform: uppercase; margin-bottom: 10px;
         }
-        #player-name::placeholder { color: rgba(0, 210, 211, 0.4); }
 
-        #spelling-terminal {
-            border-color: #00cec9;
-            box-shadow: 0 0 30px rgba(0, 206, 201, 0.3);
+        /* --- WORD BUILDER UI --- */
+        #builder-columns {
+            display: flex; gap: 5px; justify-content: center; margin: 15px 0;
         }
-        #terminal-screen {
-            background: #000; border: 2px solid #555; padding: 20px;
-            margin: 20px 0; border-radius: 10px; min-height: 100px;
-            display: flex; flex-direction: column; justify-content: center;
+        .build-col {
+            display: flex; flex-direction: column; gap: 5px; width: 33%;
         }
-        #word-definition { color: #81ecec; font-size: 18px; margin-bottom: 15px; }
-        #typed-input {
-            font-size: 32px; letter-spacing: 5px; color: #00cec9;
-            font-weight: bold; text-transform: uppercase;
-            border-bottom: 2px solid #555; display: inline-block; min-width: 200px;
+        .col-header { font-size: 12px; color: #81ecec; margin-bottom: 5px; text-transform: uppercase;}
+        .part-btn {
+            background: #2d3436; border: 1px solid #636e72; color: #dfe6e9;
+            padding: 8px 2px; cursor: pointer; font-family: inherit; font-size: 13px;
+            border-radius: 5px; transition: 0.2s;
         }
-        .blink { animation: blinker 1s linear infinite; }
-        @keyframes blinker { 50% { opacity: 0; } }
+        .part-btn:active { transform: scale(0.95); }
+        .part-btn.selected { background: #00cec9; color: black; border-color: white; font-weight: bold; box-shadow: 0 0 10px #00cec9;}
         
-        #virtual-keyboard {
-            display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; margin-top: 15px;
+        #api-feedback {
+            margin-top: 15px; padding: 10px; border-radius: 5px; min-height: 40px;
+            font-size: 14px; display: none; text-align: left;
         }
-        .key {
-            background: #2d3436; color: white; padding: 10px; min-width: 30px;
-            border-radius: 5px; cursor: pointer; border: 1px solid #636e72;
-        }
-        .key:active { background: #00cec9; color: black; }
+        .api-loading { color: #f1c40f; text-align: center !important; }
+        .api-success { background: rgba(0, 184, 148, 0.2); color: #55efc4; border: 1px solid #00b894; }
+        .api-error { background: rgba(214, 48, 49, 0.2); color: #ff7675; border: 1px solid #d63031; text-align: center !important; }
 
         canvas { display: block; }
         #powerup-msg {
             position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
             color: #feca57; font-size: 30px; font-weight: bold; text-shadow: 0 0 20px gold;
-            display: none; pointer-events: none;
+            display: none; pointer-events: none; z-index: 100;
         }
-        #saving-msg { font-size: 14px; color: #fab1a0; margin-top: 10px; display: none; }
     </style>
 </head>
 <body>
@@ -142,7 +133,7 @@
 
     <div id="ui-layer">
         <div id="top-hud">
-            <button id="quit-btn" onclick="endGame()">⚠ ABORT & SAVE</button>
+            <button id="quit-btn" onclick="endGame()">⚠ QUIT</button>
             <div id="level-indicator">LEVEL 1</div>
             <div id="lives-display">❤️❤️❤️</div>
             <div id="question-text">Loading...</div>
@@ -153,8 +144,10 @@
     </div>
 
     <div id="touch-controls">
-        <div style="display:flex; gap:20px;">
+        <div id="d-pad">
+            <div class="touch-btn" id="btn-up">▲</div>
             <div class="touch-btn" id="btn-left">◀</div>
+            <div class="touch-btn" id="btn-down">▼</div>
             <div class="touch-btn" id="btn-right">▶</div>
         </div>
         <div class="touch-btn" id="fire-btn">🔥</div>
@@ -163,123 +156,101 @@
     <div id="start-screen" class="screen-overlay">
         <h1>🚀 Galaxy Explorer</h1>
         <p>Please identify yourself, Captain.</p>
-        
         <input type="text" id="player-name" placeholder="ENTER USERNAME" maxlength="12" autocomplete="off">
-        
-        <div style="margin-top: 20px; font-size: 14px; color: #81ecec;">
-            MISSION: Master the Suffixes
-        </div>
-        
         <button class="menu-btn" onclick="startGame()">LAUNCH MISSION</button>
     </div>
 
     <div id="spelling-terminal" class="screen-overlay hidden">
         <h2 style="color:#00cec9">WARP DRIVE ENGAGED</h2>
         <p>Type the password to jump sectors:</p>
+        <div style="background:#000; padding:20px; border:2px solid #555; margin:10px 0;">
+            <div id="word-definition" style="color:#81ecec; margin-bottom:10px;">DEF</div>
+            <span id="typed-input" style="font-size:24px; color:#00cec9; letter-spacing:3px;"></span>
+        </div>
+        <div id="virtual-keyboard" style="display:flex; flex-wrap:wrap; justify-content:center; gap:5px;"></div>
+    </div>
+
+    <div id="word-builder" class="screen-overlay hidden">
+        <h2 style="color:#fdcb6e">DATA CORE RETRIEVED!</h2>
+        <p style="font-size:14px; margin-bottom:10px;">Select parts to build a word:</p>
         
-        <div id="terminal-screen">
-            <div id="word-definition">DEFINITION HERE</div>
-            <div>
-                <span id="typed-input"></span><span class="blink">_</span>
+        <div id="builder-columns">
+            <div class="build-col" id="col-prefix">
+                <div class="col-header">Prefix</div>
+            </div>
+            <div class="build-col" id="col-root">
+                <div class="col-header">Root</div>
+            </div>
+            <div class="build-col" id="col-suffix">
+                <div class="col-header">Suffix</div>
             </div>
         </div>
 
-        <div id="virtual-keyboard">
-        </div>
+        <div id="api-feedback"></div>
+        <button class="menu-btn" onclick="submitWordBuild()" style="background:#fdcb6e; color:black;">ANALYZE STRUCTURE</button>
     </div>
 
     <div id="game-over-screen" class="screen-overlay hidden">
         <h1>Mission Complete!</h1>
-        <p>You have explored the whole galaxy!</p>
         <h2 id="final-score">Score: 0</h2>
-        <div id="saving-msg">Transmitting flight data...</div>
-        <button class="menu-btn" onclick="resetGameUI()">RESTART GALAXY</button>
+        <div id="saving-msg" style="color:#fab1a0; margin-top:10px;"></div>
+        <button class="menu-btn" onclick="resetGameUI()">RESTART MISSION</button>
     </div>
 
 <script>
+    // --- GAME DATA ---
     const sourceData = [
         { word: "Greenish", def: "Sort of green", sent: "The banana is still ____.", group: "ish" },
         { word: "Reddish", def: "Looks mostly red", sent: "The sunset was ____ orange.", group: "ish" },
-        { word: "Smallish", def: "Sort of small", sent: "We need a ____ box.", group: "ish" },
-        { word: "Tallish", def: "Kind of tall", sent: "The tree is ____.", group: "ish" },
-        { word: "Roundish", def: "Mostly round", sent: "A smooth, ____ rock.", group: "ish" },
-        { word: "Flattish", def: "Mostly flat", sent: "Find a ____ stone.", group: "ish" },
-        { word: "Warmish", def: "A little bit warm", sent: "The cocoa was only ____.", group: "ish" },
-        { word: "Coldish", def: "A little bit cold", sent: "The water feels ____.", group: "ish" },
-        { word: "Sweetish", def: "Tastes sort of sweet", sent: "The medicine was ____.", group: "ish" },
-        { word: "Newish", def: "Mostly new", sent: "My bike is ____.", group: "ish" },
-        { word: "Oldish", def: "Kind of old", sent: "We drive an ____ car.", group: "ish" },
-        { word: "Soonish", def: "In a little while", sent: "We will finish ____.", group: "ish" },
-        { word: "Sevenish", def: "Around 7:00", sent: "Wake me at ____.", group: "ish" },
-        { word: "Sheepish", def: "Shy or embarrassed", sent: "He gave a ____ smile.", group: "ish" },
-        { word: "Bookish", def: "Loves reading", sent: "She is very ____.", group: "ish" },
-        { word: "Clownish", def: "Acting silly", sent: "Stop being ____!", group: "ish" },
-        { word: "Childish", def: "Acting like a kid", sent: "It is ____ to cry.", group: "ish" },
-        { word: "Selfish", def: "Thinking only of self", sent: "The ____ squirrel.", group: "ish" },
-        { word: "Bluish", def: "Sort of blue", sent: "His lips turned ____.", group: "ish" },
-        { word: "Ticklish", def: "Laughs when touched", sent: "I am very ____!", group: "ish" },
-        { word: "Pinkish", def: "A little bit pink", sent: "The sky turned ____.", group: "ish" },
-        { word: "Yellowish", def: "Sort of yellow", sent: "The paper was ____.", group: "ish" },
-        { word: "Brownish", def: "Kind of brown", sent: "The bear was ____.", group: "ish" },
-        { word: "Darkish", def: "Sort of dark", sent: "It is ____ inside.", group: "ish" },
-        { word: "Softish", def: "Mostly soft", sent: "The pillow is ____.", group: "ish" },
-        { word: "Hardish", def: "Kind of hard", sent: "The bread is ____.", group: "ish" },
-        { word: "Wildish", def: "A little bit wild", sent: "The garden looks ____.", group: "ish" },
-        { word: "Whitish", def: "Sort of white", sent: "The smoke was ____.", group: "ish" },
         { word: "Helpful", def: "Full of help", sent: "Thank you for being ____.", group: "ful" },
         { word: "Playful", def: "Full of play", sent: "The puppy is very ____.", group: "ful" },
-        { word: "Hopeful", def: "Full of hope", sent: "I am ____ we will win.", group: "ful" },
-        { word: "Careful", def: "Full of care", sent: "Be ____ on the stairs.", group: "ful" },
-        { word: "Colorful", def: "Full of color", sent: "The rainbow is ____.", group: "ful" },
-        { word: "Painful", def: "Full of pain", sent: "The bee sting was ____.", group: "ful" },
-        { word: "Joyful", def: "Full of joy", sent: "Sing a ____ song!", group: "ful" },
-        { word: "Fearful", def: "Full of fear", sent: "The ____ mouse ran away.", group: "ful" },
-        { word: "Powerful", def: "Full of power", sent: "The engine is ____.", group: "ful" },
-        { word: "Thankful", def: "Full of thanks", sent: "I am ____ for my food.", group: "ful" },
-        { word: "Wishful", def: "Full of wishes", sent: "That is ____ thinking.", group: "ful" },
-        { word: "Useful", def: "Full of use", sent: "This tool is very ____.", group: "ful" },
         { word: "Fearless", def: "Without fear", sent: "The hero was ____.", group: "less" },
         { word: "Hopeless", def: "Without hope", sent: "The situation felt ____.", group: "less" },
-        { word: "Toothless", def: "Without teeth", sent: "The ____ baby smiled.", group: "less" },
-        { word: "Endless", def: "Without end", sent: "The road seemed ____.", group: "less" },
-        { word: "Careless", def: "Without care", sent: "A ____ mistake.", group: "less" },
-        { word: "Spotless", def: "Without spots/dirt", sent: "My clean room is ____.", group: "less" },
-        { word: "Painless", def: "Without pain", sent: "The shot was ____.", group: "less" },
-        { word: "Homeless", def: "Without a home", sent: "We helped the ____ dog.", group: "less" },
-        { word: "Useless", def: "Without use", sent: "A broken toy is ____.", group: "less" },
-        { word: "Powerless", def: "Without power", sent: "We were ____ to stop it.", group: "less" },
-        { word: "Sleepless", def: "Without sleep", sent: "I had a ____ night.", group: "less" },
         { word: "Quickly", def: "In a quick way", sent: "Run ____ to the door!", group: "ly" },
         { word: "Slowly", def: "In a slow way", sent: "The turtle walked ____.", group: "ly" },
-        { word: "Loudly", def: "In a loud way", sent: "He shouted ____.", group: "ly" },
-        { word: "Softly", def: "In a soft way", sent: "She whispered ____.", group: "ly" },
-        { word: "Sadly", def: "In a sad way", sent: "He waved goodbye ____.", group: "ly" },
-        { word: "Gladly", def: "In a glad/happy way", sent: "I will ____ help you.", group: "ly" },
-        { word: "Badly", def: "In a bad way", sent: "The team played ____.", group: "ly" },
-        { word: "Madly", def: "In a mad/crazy way", sent: "Running ____ around.", group: "ly" },
-        { word: "Kindy", def: "In a kind way", sent: "She spoke ____ to me.", group: "ly" },
-        { word: "Neatly", def: "In a neat way", sent: "Write your name ____.", group: "ly" },
-        { word: "Bravely", def: "In a brave way", sent: "He ____ fought the dragon.", group: "ly" }
+        { word: "Kindness", def: "Quality of being kind", sent: "Show ____ to others.", group: "ness" },
+        { word: "Unhappy", def: "Not happy", sent: "He was ____ about the rain.", group: "un" }
     ];
 
-    // ==========================================
-    // === GOOGLE FORMS CONFIGURATION SECTION ===
-    // ==========================================
-    
-    const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSf8CTLRXWtnudAp_w8aHHXFIJTg90r72GRyKihHlVYPf7mi5A/formResponse";
-    
-    const FORM_ID_NAME = "entry.367069068";     
-    const FORM_ID_SCORE = "entry.1373567510";   
-    const FORM_ID_MISTAKES = "entry.1389440728";
-    const FORM_ID_PROBLEM = "entry.2123758649"; 
+    const availableParts = {
+        prefixes: ["UN", "RE", "DIS", "PRE", "NONE"],
+        roots: ["HELP", "PLAY", "KIND", "VIEW", "HOPE", "COLOR", "USE"],
+        suffixes: ["FUL", "ING", "NESS", "ED", "LESS", "LY"]
+    };
 
-    // ==========================================
+    const AFFIX_MEANINGS = {
+        "UN": "not / opposite of", "RE": "again / back", "DIS": "not / apart", "PRE": "before",
+        "FUL": "full of", "ING": "happening now", "NESS": "state of being", "ED": "past tense",
+        "LESS": "without", "LY": "in a way (adverb)", "NONE": ""
+    };
 
+    function fixSpelling(root, suffix) {
+        if (!suffix) return root;
+        const r = root.toLowerCase();
+        const s = suffix.toLowerCase();
+        const vowels = ['a','e','i','o','u','y'];
+        const isVowel = (c) => vowels.includes(c);
+        const lastChar = r.slice(-1);
+        const secondLast = r.slice(-2, -1);
+        if (lastChar === 'e' && isVowel(s[0])) return r.slice(0, -1) + s;
+        if (lastChar === 'y' && !isVowel(secondLast) && s[0] !== 'i') return r.slice(0, -1) + 'i' + s;
+        if (r.length < 4 && !isVowel(lastChar) && isVowel(secondLast) && isVowel(s[0])) return r + lastChar + s;
+        return r + s;
+    }
+
+    // --- GLOBALS ---
     let gameDeck = [];
-    let username = "Unknown";
-    let battleLog = [];
     let lives = 3;
-    let powerupMsgTimer = null; 
+    let gameState = 'START';
+    let score = 0;
+    let wordIndex = 0;
+    let currentLevel = 1;
+    let lastSpellingIndex = -1;
+    let selectedParts = { prefix: "NONE", root: "", suffix: "" };
+
+    const player = { x: 0, y: 0, w: 50, h: 50, speed: 6, color: '#00d2d3', powerupTime: 0, shielded: false };
+    let bullets = [], asteroids = [], particles = [], stars = [], powerups = [];
+    const keys = { left: false, right: false, up: false, down: false };
 
     // --- SETUP ---
     const canvas = document.getElementById('gameCanvas');
@@ -296,139 +267,73 @@
         const gain = audioCtx.createGain();
         osc.connect(gain); gain.connect(audioCtx.destination);
         const now = audioCtx.currentTime;
-
+        
         if (type === 'shoot') {
             osc.frequency.setValueAtTime(600, now); osc.frequency.exponentialRampToValueAtTime(100, now+0.1);
             gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now+0.1);
-            osc.start(); osc.stop(now+0.1);
-        } else if (type === 'type') { 
-            osc.type = 'square'; osc.frequency.setValueAtTime(800, now);
-            gain.gain.setValueAtTime(0.05, now); gain.gain.linearRampToValueAtTime(0, now+0.05);
-            osc.start(); osc.stop(now+0.05);
-        } else if (type === 'warp') { 
-            osc.type = 'sine'; osc.frequency.setValueAtTime(200, now); osc.frequency.linearRampToValueAtTime(800, now+0.5);
-            gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now+0.5);
-            osc.start(); osc.stop(now+0.5);
-        } else if (type === 'win') {
-            osc.type = 'triangle'; osc.frequency.setValueAtTime(400, now); osc.frequency.setValueAtTime(600, now+0.1);
+        } else if (type === 'bonus') {
+            osc.type = 'triangle'; osc.frequency.setValueAtTime(300, now); osc.frequency.linearRampToValueAtTime(600, now+0.2);
             gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now+0.3);
-            osc.start(); osc.stop(now+0.3);
-        } else if (type === 'collect') { 
-            osc.type = 'sine'; osc.frequency.setValueAtTime(400, now); osc.frequency.linearRampToValueAtTime(800, now+0.2);
-            gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now+0.2);
-            osc.start(); osc.stop(now+0.2);
-        } else if (type === 'shield') {
-            osc.type = 'square'; osc.frequency.setValueAtTime(150, now); osc.frequency.linearRampToValueAtTime(300, now+0.3);
+        } else if (type === 'hit') {
+            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now); osc.frequency.exponentialRampToValueAtTime(50, now+0.3);
             gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now+0.3);
-            osc.start(); osc.stop(now+0.3);
+        } else {
+            osc.frequency.setValueAtTime(400, now); gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now+0.1);
         }
+        osc.start(); osc.stop(now+0.3);
     }
 
-    // --- GAME STATE ---
-    let gameState = 'START';
-    let score = 0;
-    let wordIndex = 0;
-    let currentLevel = 1;
-    const wordsPerLevel = 5; 
-    let lastSpellingIndex = -1;
-    
-    let targetSpellingWord = "";
-    let currentTypedWord = "";
-
-    const player = { 
-        x: 0, y: 0, w: 50, h: 50, 
-        baseSpeed: 6, speed: 6, 
-        color: '#00d2d3', 
-        powerupTime: 0, 
-        speedBoostTimer: 0, 
-        shielded: false     
-    };
-    
-    let bullets = [];
-    let asteroids = [];
-    let particles = [];
-    let stars = [];
-    let powerups = []; 
-    const keys = { left: false, right: false };
-
-    // --- INPUT BINDING ---
+    // --- INPUT ---
     window.addEventListener('keydown', e => {
         if (gameState === 'PLAYING') {
             if(e.code === 'ArrowLeft') keys.left = true;
             if(e.code === 'ArrowRight') keys.right = true;
+            if(e.code === 'ArrowUp') keys.up = true;
+            if(e.code === 'ArrowDown') keys.down = true;
             if(e.code === 'Space') fireBullet();
         } else if (gameState === 'SPELLING') {
             handleSpellingKey(e.key);
         }
     });
     window.addEventListener('keyup', e => {
-        if(e.code === 'ArrowLeft') keys.left = false;
-        if(e.code === 'ArrowRight') keys.right = false;
+        if(e.code.startsWith('Arrow')) {
+            keys.left = false; keys.right = false; keys.up = false; keys.down = false; 
+        }
     });
 
-    const btnLeft = document.getElementById('btn-left');
-    const btnRight = document.getElementById('btn-right');
-    const btnFire = document.getElementById('fire-btn');
+    const dpad = { up: document.getElementById('btn-up'), down: document.getElementById('btn-down'), left: document.getElementById('btn-left'), right: document.getElementById('btn-right') };
+    Object.keys(dpad).forEach(k => {
+        dpad[k].addEventListener('touchstart', (e)=>{ e.preventDefault(); keys[k]=true; });
+        dpad[k].addEventListener('touchend', (e)=>{ e.preventDefault(); keys[k]=false; });
+    });
+    document.getElementById('fire-btn').addEventListener('touchstart', (e)=>{e.preventDefault(); fireBullet();});
 
-    function bindGameInput(elem, keyName) {
-        elem.addEventListener('touchstart', (e) => { e.preventDefault(); if(gameState==='PLAYING') keys[keyName]=true; elem.classList.add('pressed'); });
-        elem.addEventListener('touchend', (e) => { e.preventDefault(); keys[keyName]=false; elem.classList.remove('pressed'); });
-        elem.addEventListener('mousedown', (e) => { if(gameState==='PLAYING') keys[keyName]=true; elem.classList.add('pressed'); });
-        elem.addEventListener('mouseup', (e) => { keys[keyName]=false; elem.classList.remove('pressed'); });
-    }
-    bindGameInput(btnLeft, 'left');
-    bindGameInput(btnRight, 'right');
-    btnFire.addEventListener('touchstart', (e)=>{e.preventDefault(); if(gameState==='PLAYING') fireBullet(); btnFire.classList.add('pressed');});
-    btnFire.addEventListener('touchend', ()=>{btnFire.classList.remove('pressed');});
-    btnFire.addEventListener('mousedown', ()=>{if(gameState==='PLAYING') fireBullet(); btnFire.classList.add('pressed');});
-    btnFire.addEventListener('mouseup', ()=>{btnFire.classList.remove('pressed');});
-
-    function buildDeck() {
-        let ish = sourceData.filter(d => d.group === 'ish');
-        let ful = sourceData.filter(d => d.group === 'ful');
-        let less = sourceData.filter(d => d.group === 'less');
-        let ly = sourceData.filter(d => d.group === 'ly');
-        const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
-        shuffle(ish); shuffle(ful); shuffle(less); shuffle(ly);
-        gameDeck = [...ish, ...ful, ...less, ...ly];
-    }
-
+    // --- GAME LOGIC ---
     function startGame() {
-        const nameInput = document.getElementById('player-name');
-        const nameVal = nameInput.value.trim();
-        if (nameVal === "") {
-            nameInput.style.borderColor = "#ff7675";
-            nameInput.placeholder = "NAME REQUIRED!";
-            return; 
-        }
-        username = nameVal;
-        battleLog = [];
         document.getElementById('start-screen').classList.add('hidden');
         document.getElementById('game-over-screen').classList.add('hidden');
-        score = 0;
-        wordIndex = 0;
-        currentLevel = 1;
-        lives = 3;
-        lastSpellingIndex = -1;
-        
-        player.shielded = false;
-        player.speedBoostTimer = 0;
-        player.powerupTime = 0;
-        
-        updateLivesDisplay();
-        buildDeck();
-        player.x = width / 2;
-        player.y = height - 160;
-        stars = [];
-        for(let i=0; i<80; i++) stars.push({x: Math.random()*width, y: Math.random()*height, speed: Math.random()*3});
-        loadQuestion();
-        gameState = 'PLAYING';
+        resetGameState();
         gameLoop();
     }
-    
+
+    function resetGameState() {
+        score = 0; wordIndex = 0; currentLevel = 1; lives = 3;
+        player.x = width/2; player.y = height-100;
+        asteroids = []; bullets = []; powerups = [];
+        updateLivesDisplay();
+        gameDeck = [...sourceData, ...sourceData].sort(()=>Math.random()-0.5);
+        stars = Array(80).fill().map(()=>({x:Math.random()*width, y:Math.random()*height, speed:Math.random()*3}));
+        gameState = 'PLAYING';
+        document.getElementById('ui-layer').style.display = 'flex';
+        document.getElementById('touch-controls').style.display = 'flex';
+        loadQuestion();
+    }
+
     function resetGameUI() {
-        document.getElementById('start-screen').classList.remove('hidden');
         document.getElementById('game-over-screen').classList.add('hidden');
+        document.getElementById('start-screen').classList.remove('hidden');
+        gameState = 'START';
+        asteroids = []; bullets = [];
     }
 
     function updateLivesDisplay() {
@@ -438,356 +343,232 @@
         document.getElementById('lives-display').innerText = display;
     }
 
+    function spawnParticles(x, y, color) {
+        for(let i=0; i<10; i++) particles.push({x:x, y:y, vx:(Math.random()-0.5)*10, vy:(Math.random()-0.5)*10, life:1, color:color});
+    }
+
+    function playerTakeDamage() {
+        lives--;
+        updateLivesDisplay();
+        playSound('hit'); 
+        spawnParticles(player.x, player.y, 'red');
+        if(lives <= 0) endGame();
+    }
+
     function loadQuestion() {
-        if (wordIndex > 0 && wordIndex % wordsPerLevel === 0 && wordIndex !== lastSpellingIndex) {
-            startSpellingChallenge();
-            return;
-        }
-        if (wordIndex >= gameDeck.length) {
-            endGame();
-            return;
-        }
+        if(wordIndex >= gameDeck.length) return endGame();
+        if(wordIndex > 0 && wordIndex % 5 === 0 && wordIndex !== lastSpellingIndex) return startSpellingChallenge();
+        
         const data = gameDeck[wordIndex];
         document.getElementById('question-text').innerText = "TARGET: " + data.def;
         document.getElementById('sentence-hint').innerText = '"' + data.sent + '"';
-        document.getElementById('score-display').innerText = score;
         document.getElementById('level-indicator').innerText = "LEVEL " + currentLevel;
-        document.getElementById('ui-layer').style.display = 'flex'; 
-        document.getElementById('touch-controls').style.display = 'flex'; 
+        document.getElementById('score-display').innerText = score;
         spawnAsteroids(data);
     }
 
+    function spawnBonusItem() {
+        powerups.push({
+            x: Math.random()*(width-40)+20, y: -50, size: 30, speed: 2, 
+            type: 'DATA_CORE', color: '#0984e3', symbol: '?'
+        });
+    }
+
+    function activatePowerup(p) {
+        if(p.type === 'DATA_CORE') openWordBuilder();
+    }
+
+    function openWordBuilder() {
+        gameState = 'BUILDER';
+        document.getElementById('ui-layer').style.display = 'none';
+        document.getElementById('touch-controls').style.display = 'none';
+        document.getElementById('word-builder').classList.remove('hidden');
+        selectedParts = { prefix: "NONE", root: "", suffix: "" };
+        renderBuilderCols();
+        document.getElementById('api-feedback').style.display = 'none';
+    }
+
+    function renderBuilderCols() {
+        const createBtns = (arr, type, containerId) => {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<div class="col-header">${type}</div>`;
+            arr.forEach(item => {
+                const btn = document.createElement('div');
+                btn.className = 'part-btn';
+                if(item === "NONE") btn.innerText = "(None)";
+                else btn.innerText = item;
+                if (selectedParts[type.toLowerCase()] === item) btn.classList.add('selected');
+                btn.onclick = () => { selectedParts[type.toLowerCase()] = item; renderBuilderCols(); };
+                container.appendChild(btn);
+            });
+        };
+        createBtns(availableParts.prefixes, "Prefix", "col-prefix");
+        createBtns(availableParts.roots, "Root", "col-root");
+        createBtns(availableParts.suffixes, "Suffix", "col-suffix");
+    }
+
+    async function submitWordBuild() {
+        const feedbackEl = document.getElementById('api-feedback');
+        feedbackEl.style.display = 'block';
+        feedbackEl.className = 'api-loading';
+        feedbackEl.innerText = "Connecting to Dictionary Database...";
+        
+        let p = selectedParts.prefix === "NONE" ? "" : selectedParts.prefix;
+        let r = selectedParts.root;
+        let s = selectedParts.suffix;
+        let combinedEnd = fixSpelling(r, s);
+        let constructedWord = p + combinedEnd;
+        let finalWord = constructedWord.toLowerCase();
+
+        try {
+            let response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${finalWord}`);
+            if (!response.ok) throw new Error("Word not found");
+            const data = await response.json();
+            const definition = data[0].meanings[0].definitions[0].definition;
+            const pos = data[0].meanings[0].partOfSpeech;
+
+            let explanation = `Root <b>${r}</b> `;
+            if(p) explanation += `modified by <b>${p}-</b> (${AFFIX_MEANINGS[p]}) `;
+            if(s) explanation += `and <b>-${s}</b> (${AFFIX_MEANINGS[s]})`;
+            if(!p && !s) explanation += "is the base word.";
+            if(combinedEnd.toLowerCase() !== (r+s).toLowerCase()) explanation += " <br><i>(Spelling rule applied!)</i>";
+
+            feedbackEl.className = 'api-success';
+            feedbackEl.innerHTML = `<div style="font-size:18px; font-weight:bold; margin-bottom:5px;">✅ ${finalWord.toUpperCase()}</div><div style="font-size:12px; margin-bottom:5px;">${pos}: ${definition}</div><div style="font-size:11px; color:#2d3436; background:rgba(255,255,255,0.5); padding:5px; border-radius:4px;">${explanation}</div>`;
+            playSound('bonus');
+            score += 50; 
+            setTimeout(() => {
+                document.getElementById('word-builder').classList.add('hidden');
+                document.getElementById('ui-layer').style.display = 'flex';
+                document.getElementById('touch-controls').style.display = 'flex';
+                gameState = 'PLAYING';
+            }, 3500);
+
+        } catch (error) {
+            feedbackEl.className = 'api-error';
+            feedbackEl.innerHTML = `❌ <b>"${finalWord.toUpperCase()}"</b> is not in the dictionary.<br>Try a different combination.`;
+            score = Math.max(0, score - 5);
+        }
+    }
+
+    // --- SPELLING ---
+    let targetSpellingWord = "", currentTypedWord = "";
     function startSpellingChallenge() {
         gameState = 'SPELLING';
         lastSpellingIndex = wordIndex;
         document.getElementById('ui-layer').style.display = 'none';
         document.getElementById('touch-controls').style.display = 'none';
-        const data = gameDeck[wordIndex - 1]; 
+        const data = gameDeck[wordIndex-1];
         targetSpellingWord = data.word.toUpperCase();
         currentTypedWord = "";
-        const term = document.getElementById('spelling-terminal');
-        term.classList.remove('hidden');
-        document.getElementById('word-definition').innerText = "DEFINITION: " + data.def;
+        document.getElementById('spelling-terminal').classList.remove('hidden');
+        document.getElementById('word-definition').innerText = data.def;
         updateTypedDisplay();
-        generateVirtualKeyboard();
-    }
-
-    function generateVirtualKeyboard() {
         const kb = document.getElementById('virtual-keyboard');
         kb.innerHTML = '';
-        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        for (let char of letters) {
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('').forEach(char => {
             let key = document.createElement('div');
-            key.className = 'key';
+            key.style.cssText = "background:#333; color:white; padding:10px; width:30px; border-radius:5px; cursor:pointer;";
             key.innerText = char;
-            key.onmousedown = (e) => { e.preventDefault(); handleSpellingKey(char); }; 
-            key.ontouchstart = (e) => { e.preventDefault(); handleSpellingKey(char); }; 
+            key.onclick = () => handleSpellingKey(char);
             kb.appendChild(key);
-        }
+        });
         let bs = document.createElement('div');
-        bs.className = 'key';
-        bs.style.minWidth = '60px';
-        bs.innerText = "⌫";
-        bs.onmousedown = (e) => { e.preventDefault(); handleSpellingKey("Backspace"); };
-        bs.ontouchstart = (e) => { e.preventDefault(); handleSpellingKey("Backspace"); };
+        bs.innerText = "⌫"; bs.style.cssText = "background:#d63031; color:white; padding:10px; width:30px; border-radius:5px; cursor:pointer;";
+        bs.onclick = () => handleSpellingKey("Backspace");
         kb.appendChild(bs);
     }
 
     function handleSpellingKey(key) {
-        if (gameState !== 'SPELLING') return;
-        if (key === 'Backspace') {
-            currentTypedWord = currentTypedWord.slice(0, -1);
-            playSound('type');
-        } else if (key.length === 1 && key.match(/[a-z]/i)) {
-            if (currentTypedWord.length < targetSpellingWord.length) {
-                currentTypedWord += key.toUpperCase();
-                playSound('type');
-            }
-        }
+        if(key === "Backspace") currentTypedWord = currentTypedWord.slice(0, -1);
+        else if(key.length === 1 && key.match(/[a-zA-Z]/) && currentTypedWord.length < targetSpellingWord.length) currentTypedWord += key.toUpperCase();
         updateTypedDisplay();
-        if (currentTypedWord === targetSpellingWord) {
+        if(currentTypedWord === targetSpellingWord) {
             setTimeout(() => {
-                playSound('warp');
+                currentLevel++;
                 document.getElementById('spelling-terminal').classList.add('hidden');
-                completeLevelJump();
+                document.getElementById('ui-layer').style.display = 'flex';
+                document.getElementById('touch-controls').style.display = 'flex';
+                gameState = 'PLAYING';
+                loadQuestion();
             }, 500);
         }
     }
 
     function updateTypedDisplay() {
-        const display = document.getElementById('typed-input');
-        display.innerText = currentTypedWord;
-        if (targetSpellingWord.startsWith(currentTypedWord)) {
-            display.style.color = "#00cec9";
-        } else {
-            display.style.color = "#ff7675";
-        }
-    }
-
-    function completeLevelJump() {
-        currentLevel++;
-        gameState = 'PLAYING';
-        document.getElementById('ui-layer').style.display = 'flex';
-        document.getElementById('touch-controls').style.display = 'flex';
-        loadQuestion(); 
+        document.getElementById('typed-input').innerText = currentTypedWord + "_";
     }
 
     function spawnAsteroids(data) {
-        asteroids = []; bullets = []; 
-        
-        // SPAWN COLLECTIBLES
-        trySpawnCollectibles();
-
+        asteroids = []; 
+        if(Math.random() > 0.7) spawnBonusItem();
         let options = [data.word];
         while(options.length < 3) {
             let r = gameDeck[Math.floor(Math.random()*gameDeck.length)].word;
             if(!options.includes(r)) options.push(r);
         }
         options.sort(()=>Math.random()-0.5);
-
-        // DIFFICULTY PROGRESSION (10% faster per level)
-        let levelMultiplier = Math.pow(1.1, currentLevel - 1);
-        let baseSpeed = 2 * levelMultiplier;
-        if (baseSpeed > 8) baseSpeed = 8; 
-
+        const speed = 1.0 + (currentLevel * 0.15); 
         const sector = width/3;
         options.forEach((word, i) => {
             asteroids.push({
-                x: (i*sector)+(sector/2)-50, y: -150-(Math.random()*100),
-                w: 120, h: 60, text: word,
-                isCorrect: word===data.word, speed: baseSpeed,
-                wobble: currentLevel > 5 ? Math.random()*0.05 : 0
+                x: i*sector + sector/2 - 40, y: -100 - Math.random()*100,
+                w: 100, h: 50, text: word,
+                isCorrect: word===data.word, speed: speed
             });
         });
-    }
-
-    function trySpawnCollectibles() {
-        let rand = Math.random();
-        
-        // 1. Dual Blaster (Yellow) - 20%
-        if (rand < 0.2) {
-             powerups.push({x: Math.random()*(width-40)+20, y: -300, size: 30, speed: 2, type: 'GUN', color: '#f1c40f', symbol: ''});
-             return;
-        }
-        
-        // 2. Heart (Red) - 10%
-        if (rand < 0.3) {
-             powerups.push({x: Math.random()*(width-40)+20, y: -300, size: 30, speed: 3, type: 'HEART', color: '#ff7675', symbol: '+'});
-             return;
-        }
-
-        // 3. Speed Boost (Cyan) - 10%
-        if (rand < 0.4) {
-             powerups.push({x: Math.random()*(width-40)+20, y: -300, size: 30, speed: 4, type: 'SPEED', color: '#00d2d3', symbol: '⚡'});
-             return;
-        }
-
-        // 4. Shield (Purple) - 5%
-        if (rand < 0.45) {
-             powerups.push({x: Math.random()*(width-40)+20, y: -300, size: 30, speed: 2, type: 'SHIELD', color: '#a29bfe', symbol: '🛡️'});
-             return;
-        }
     }
 
     function fireBullet() {
         if(gameState!=='PLAYING') return;
         playSound('shoot');
-        if(player.powerupTime>0) {
-            bullets.push({x: player.x-20, y: player.y-20, w: 8, h: 20, speed: 12, color: '#feca57'});
-            bullets.push({x: player.x+20, y: player.y-20, w: 8, h: 20, speed: 12, color: '#feca57'});
-        } else {
-            bullets.push({x: player.x, y: player.y-20, w: 8, h: 20, speed: 12, color: '#ff9f43'});
-        }
-    }
-
-    function activatePowerup(p) {
-        const msg = document.getElementById('powerup-msg');
-        
-        // Clear any existing timer to prevent early disappearance
-        if (powerupMsgTimer) clearTimeout(powerupMsgTimer);
-
-        // Show the message
-        msg.style.display = 'block';
-
-        if (p.type === 'GUN') {
-            player.powerupTime = 300; 
-            msg.innerText = "DUAL BLASTERS! ⭐";
-        } else if (p.type === 'HEART') {
-            lives++;
-            if(lives > 5) lives = 5;
-            updateLivesDisplay();
-            playSound('collect');
-            msg.innerText = "EXTRA LIFE! ❤️";
-        } else if (p.type === 'SPEED') {
-            player.speedBoostTimer = 300; 
-            playSound('warp');
-            msg.innerText = "SPEED BOOST! ⚡";
-        } else if (p.type === 'SHIELD') {
-            player.shielded = true;
-            playSound('shield');
-            msg.innerText = "SHIELD UP! 🛡️";
-        }
-
-        // Hide message after 2 seconds
-        powerupMsgTimer = setTimeout(() => {
-            msg.style.display = 'none';
-        }, 2000);
-    }
-
-    function spawnParticles(x, y, color) {
-        for(let i=0; i<10; i++) particles.push({x:x, y:y, vx:(Math.random()-0.5)*10, vy:(Math.random()-0.5)*10, life:1, color:color});
-    }
-
-    function analyzePerformance() {
-        let mistakes = battleLog.filter(entry => entry.result === "WRONG");
-        let mistakeText = mistakes.map(m => `${m.word} (-${m.group})`).join(", ");
-        if (mistakeText === "") mistakeText = "None! Perfect Run.";
-        let counts = { ish: 0, ful: 0, less: 0, ly: 0 };
-        mistakes.forEach(m => {
-            if (counts[m.group] !== undefined) counts[m.group]++;
-        });
-        let maxErrors = 0;
-        let worstGroup = "None";
-        for (const [group, count] of Object.entries(counts)) {
-            if (count > maxErrors) {
-                maxErrors = count;
-                worstGroup = "-" + group.toUpperCase();
-            }
-        }
-        return { mistakeText, worstGroup };
-    }
-
-    function sendScoreToGoogleSheets() {
-        const report = analyzePerformance();
-        
-        document.getElementById('saving-msg').style.display = 'block';
-        document.getElementById('saving-msg').innerText = "Sending Data...";
-
-        let iframe = document.getElementById("hidden_iframe");
-        if (!iframe) {
-            iframe = document.createElement("iframe");
-            iframe.name = "hidden_iframe";
-            iframe.id = "hidden_iframe";
-            iframe.style.display = "none";
-            document.body.appendChild(iframe);
-        }
-
-        const form = document.createElement("form");
-        form.action = GOOGLE_FORM_URL;
-        form.method = "POST";
-        form.target = "hidden_iframe";
-        form.style.display = "none";
-
-        function createInput(name, value) {
-            const input = document.createElement("input");
-            input.type = "hidden";
-            input.name = name;
-            input.value = value;
-            form.appendChild(input);
-        }
-
-        createInput(FORM_ID_NAME, username);
-        createInput(FORM_ID_SCORE, score);
-        createInput(FORM_ID_MISTAKES, report.mistakeText);
-        createInput(FORM_ID_PROBLEM, report.worstGroup);
-
-        document.body.appendChild(form);
-        form.submit();
-        
-        setTimeout(() => {
-            document.getElementById('saving-msg').innerText = "Data Transmitted Successfully!";
-            document.getElementById('saving-msg').style.color = "#00b894";
-            document.body.removeChild(form); 
-        }, 1000);
-    }
-
-    function endGame() {
-        gameState = 'GAMEOVER';
-        document.getElementById('ui-layer').style.display = 'none';
-        document.getElementById('touch-controls').style.display = 'none';
-        document.getElementById('game-over-screen').classList.remove('hidden');
-        document.getElementById('final-score').innerText = "Score: " + score;
-        sendScoreToGoogleSheets();
-    }
-
-    function playerTakeDamage() {
-        if (player.shielded) {
-            player.shielded = false;
-            playSound('shield');
-            spawnParticles(player.x, player.y, '#a29bfe');
-            return;
-        }
-
-        lives--;
-        updateLivesDisplay();
-        playSound('type'); 
-        spawnParticles(player.x, player.y, 'red');
-
-        if(lives <= 0) {
-            endGame();
-        } else {
-            player.powerupTime=0; 
-        }
+        bullets.push({x: player.x, y: player.y-20, w: 6, h: 15, speed: 10, color: '#f39c12'});
     }
 
     function update() {
-        if(gameState !== 'PLAYING') return; 
+        if(gameState !== 'PLAYING') return;
+        if(keys.left && player.x > 30) player.x -= player.speed;
+        if(keys.right && player.x < width-30) player.x += player.speed;
+        if(keys.up && player.y > 30) player.y -= player.speed;
+        if(keys.down && player.y < height-30) player.y += player.speed;
 
-        // Speed Boost Logic
-        if (player.speedBoostTimer > 0) {
-            player.speed = player.baseSpeed * 2;
-            player.speedBoostTimer--;
-            if (player.speedBoostTimer % 5 === 0) {
-                particles.push({x:player.x, y:player.y+20, vx:0, vy:5, life:0.5, color: '#00d2d3'});
-            }
-        } else {
-            player.speed = player.baseSpeed;
-        }
-
-        if(player.powerupTime>0) player.powerupTime--;
-
-        if(keys.left && player.x>50) player.x-=player.speed;
-        if(keys.right && player.x<width-50) player.x+=player.speed;
-
-        // Bullets
         for(let i=bullets.length-1; i>=0; i--) {
-            bullets[i].y-=bullets[i].speed;
-            if(bullets[i].y<0) bullets.splice(i,1);
+            bullets[i].y -= bullets[i].speed;
+            if(bullets[i].y < 0) bullets.splice(i,1);
         }
 
-        // Powerups / Collectibles
         for(let i=powerups.length-1; i>=0; i--) {
-            let p = powerups[i]; p.y+=p.speed;
+            let p = powerups[i];
+            p.y += p.speed;
+            let hit = false;
             
-            // 1. COLLECT BY SHIP
-            if(Math.hypot(player.x-p.x, player.y-p.y) < (player.w/2+p.size)) {
-                activatePowerup(p); powerups.splice(i,1); continue;
-            }
-            if(p.y>height) powerups.splice(i,1);
-
-            // 2. COLLECT BY BULLET (SHOOT TO COLLECT)
-            for(let j=bullets.length-1; j>=0; j--) {
-                let b = bullets[j];
-                // Check if bullet hits the powerup
-                if(b.x>p.x-20 && b.x<p.x+20 && b.y>p.y-20 && b.y<p.y+20) {
-                    bullets.splice(j,1); // Remove bullet
-                    activatePowerup(p);  // TRIGGER BONUS!
-                    powerups.splice(i,1); // Remove powerup
-                    break;
+            // 1. Ship Hit
+            if(Math.hypot(player.x-p.x, player.y-p.y) < 40) { activatePowerup(p); hit=true; }
+            
+            // 2. Bullet Hit
+            if(!hit) {
+                for(let j=bullets.length-1; j>=0; j--) {
+                    if(Math.hypot(bullets[j].x-p.x, bullets[j].y-p.y) < 30) {
+                        activatePowerup(p); 
+                        bullets.splice(j,1);
+                        hit=true; break;
+                    }
                 }
             }
+            if(hit) powerups.splice(i,1);
+            else if(p.y > height) powerups.splice(i,1);
         }
 
-        // Asteroids
         for(let i=asteroids.length-1; i>=0; i--) {
-            let a = asteroids[i]; a.y+=a.speed;
-            if(a.wobble) a.x+=Math.sin(a.y*0.05)*2; 
+            let a = asteroids[i];
+            a.y += a.speed;
             
-            // Missed correct word
+            // Floor Logic: Lose life if CORRECT word falls
             if(a.y > height) {
                 if(a.isCorrect) {
-                    playerTakeDamage();
-                    if(lives > 0) spawnAsteroids(gameDeck[wordIndex]); 
+                    playerTakeDamage(); 
+                    asteroids.splice(i,1);
+                    if(lives > 0 && asteroids.length === 0) spawnAsteroids(gameDeck[wordIndex]); 
                     return;
                 }
                 asteroids.splice(i,1);
@@ -796,82 +577,50 @@
 
             for(let j=bullets.length-1; j>=0; j--) {
                 let b = bullets[j];
-                if(b.x>a.x && b.x<a.x+a.w && b.y>a.y && b.y<a.y+a.h) {
+                if(b.x > a.x && b.x < a.x+a.w && b.y > a.y && b.y < a.y+a.h) {
                     bullets.splice(j,1);
-                    spawnParticles(a.x+a.w/2, a.y+a.h/2, a.isCorrect?'#00b894':'#d63031');
-                    
                     if(a.isCorrect) {
-                        // HIT CORRECT
-                        playSound('win'); 
-                        battleLog.push({ word: a.text, group: gameDeck[wordIndex].group, result: "CORRECT" });
-                        score+=10; wordIndex++; loadQuestion(); return;
+                        score += 10; wordIndex++; loadQuestion(); return;
                     } else {
-                        // HIT WRONG
-                        battleLog.push({ word: a.text, group: gameDeck[wordIndex].group, result: "WRONG" });
-                        asteroids.splice(i,1); 
                         playerTakeDamage();
+                        asteroids.splice(i,1);
+                        if(lives > 0 && asteroids.length === 0) spawnAsteroids(gameDeck[wordIndex]);
                         return;
                     }
                 }
             }
-            // Collision Ship <-> Asteroid
-            if(player.x<a.x+a.w && player.x>a.x && player.y<a.y+a.h && player.y>a.y) {
-                 playerTakeDamage();
-                 if(lives > 0) {
-                     player.powerupTime=0; 
-                     spawnAsteroids(gameDeck[wordIndex]); 
-                 }
-                 return;
-            }
         }
-        if(asteroids.length===0 && gameState==='PLAYING') spawnAsteroids(gameDeck[wordIndex]);
 
+        // CRITICAL FIX: Ensure asteroids respawn if screen is cleared by gravity/mistakes
+        if(asteroids.length === 0 && gameState === 'PLAYING') spawnAsteroids(gameDeck[wordIndex]);
+        
         particles.forEach((p,i)=>{ p.x+=p.vx; p.y+=p.vy; p.life-=0.05; if(p.life<=0) particles.splice(i,1); });
-        stars.forEach(s=>{ s.y+=s.speed; if(s.y>height){s.y=0; s.x=Math.random()*width;} });
+        stars.forEach(s => { s.y += s.speed; if(s.y>height) s.y=0; });
     }
 
     function draw() {
-        ctx.fillStyle = '#0d0e15'; ctx.fillRect(0, 0, width, height);
-        ctx.fillStyle = 'white'; stars.forEach(s=>{ctx.beginPath(); ctx.arc(s.x, s.y, 1, 0, Math.PI*2); ctx.fill();});
-
-        if(gameState !== 'PLAYING' && gameState !== 'SPELLING') return;
-
-        // Draw Collectibles
-        powerups.forEach(p=>{
-            ctx.fillStyle=p.color; 
-            ctx.beginPath(); ctx.arc(p.x, p.y, p.size/2, 0, Math.PI*2); ctx.fill();
-            ctx.shadowBlur=15; ctx.shadowColor=p.color; ctx.fill(); ctx.shadowBlur=0;
-            if(p.symbol) {
-                ctx.fillStyle='white'; ctx.font='bold 20px Arial'; ctx.fillText(p.symbol, p.x-10, p.y+7);
-            }
-        });
-
-        if (gameState === 'PLAYING') {
-            ctx.save(); ctx.translate(player.x, player.y);
-            
-            // Draw Shield if Active
-            if (player.shielded) {
-                ctx.strokeStyle = '#a29bfe'; ctx.lineWidth = 3;
-                ctx.beginPath(); ctx.arc(0, 0, 40, 0, Math.PI*2); ctx.stroke();
-                ctx.fillStyle = 'rgba(162, 155, 254, 0.2)'; ctx.fill();
-            }
-
-            ctx.fillStyle = player.powerupTime>0 ? '#f1c40f' : player.color;
-            ctx.beginPath(); ctx.moveTo(0,-30); ctx.lineTo(20,20); ctx.lineTo(-20,20); ctx.fill();
-            ctx.fillStyle='orange'; ctx.beginPath(); ctx.moveTo(-10,20); ctx.lineTo(0,35+Math.random()*10); ctx.lineTo(10,20); ctx.fill();
-            ctx.restore();
-
-            asteroids.forEach(a=>{
-                ctx.fillStyle='#636e72'; ctx.beginPath(); ctx.roundRect(a.x, a.y, a.w, a.h, 10); ctx.fill();
-                ctx.strokeStyle='#b2bec3'; ctx.lineWidth=3; ctx.stroke();
-                ctx.fillStyle='white'; ctx.font='bold 20px Arial'; ctx.textAlign='center'; ctx.fillText(a.text, a.x+a.w/2, a.y+a.h/2+7);
+        ctx.fillStyle = '#0d0e15'; ctx.fillRect(0,0,width,height);
+        ctx.fillStyle = 'white'; stars.forEach(s => { ctx.beginPath(); ctx.arc(s.x,s.y,1,0,7); ctx.fill(); });
+        if(gameState === 'PLAYING') {
+            ctx.fillStyle = player.color;
+            ctx.beginPath(); ctx.moveTo(player.x, player.y-25); ctx.lineTo(player.x-20, player.y+20); ctx.lineTo(player.x+20, player.y+20); ctx.fill();
+            asteroids.forEach(a => {
+                ctx.fillStyle = '#636e72'; ctx.fillRect(a.x, a.y, a.w, a.h);
+                ctx.fillStyle = 'white'; ctx.font = '16px Arial'; ctx.textAlign = 'center';
+                ctx.fillText(a.text, a.x+a.w/2, a.y+30);
             });
-            bullets.forEach(b=>{ctx.fillStyle=b.color; ctx.fillRect(b.x-4, b.y, b.w, b.h);});
+            bullets.forEach(b => { ctx.fillStyle=b.color; ctx.fillRect(b.x-3, b.y, b.w, b.h); });
+            powerups.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.beginPath(); ctx.arc(p.x, p.y, 15, 0, 7); ctx.fill();
+                ctx.fillStyle = 'white'; ctx.fillText(p.symbol, p.x, p.y+5);
+            });
             particles.forEach(p=>{ctx.globalAlpha=p.life; ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha=1;});
         }
     }
 
     function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
+    function endGame() { gameState='GAMEOVER'; document.getElementById('game-over-screen').classList.remove('hidden'); document.getElementById('final-score').innerText = "Score: " + score; }
 </script>
 </body>
 </html>
