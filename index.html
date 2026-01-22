@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Galaxy Explorer: Final Fix v2</title>
+    <title>Galaxy Explorer: Balanced Scoring</title>
     <style>
         body {
             margin: 0; overflow: hidden; background-color: #0d0e15;
@@ -247,6 +247,9 @@
     let currentLevel = 1;
     let lastSpellingIndex = -1;
     let selectedParts = { prefix: "NONE", root: "", suffix: "" };
+    
+    // Track discovered words so we don't give points twice
+    let discoveredWords = new Set();
 
     const player = { x: 0, y: 0, w: 50, h: 50, speed: 6, color: '#00d2d3', powerupTime: 0, shielded: false };
     let bullets = [], asteroids = [], particles = [], stars = [], powerups = [];
@@ -320,6 +323,7 @@
         score = 0; wordIndex = 0; currentLevel = 1; lives = 3;
         player.x = width/2; player.y = height-100;
         asteroids = []; bullets = []; powerups = [];
+        discoveredWords.clear();
         updateLivesDisplay();
         gameDeck = [...sourceData, ...sourceData].sort(()=>Math.random()-0.5);
         stars = Array(80).fill().map(()=>({x:Math.random()*width, y:Math.random()*height, speed:Math.random()*3}));
@@ -420,6 +424,13 @@
         let constructedWord = p + combinedEnd;
         let finalWord = constructedWord.toLowerCase();
 
+        // ALREADY DISCOVERED CHECK
+        if (discoveredWords.has(finalWord)) {
+            feedbackEl.className = 'api-error';
+            feedbackEl.innerHTML = `⚠️ <b>"${finalWord.toUpperCase()}"</b> has already been discovered!<br>Try finding a new word.`;
+            return;
+        }
+
         try {
             let response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${finalWord}`);
             if (!response.ok) throw new Error("Word not found");
@@ -433,10 +444,27 @@
             if(!p && !s) explanation += "is the base word.";
             if(combinedEnd.toLowerCase() !== (r+s).toLowerCase()) explanation += " <br><i>(Spelling rule applied!)</i>";
 
+            // CALCULATE POINTS (MAX 50)
+            // Base 10 + 3 points per letter
+            let wordLengthScore = finalWord.length * 3; 
+            let totalPoints = 10 + wordLengthScore;
+            
+            // Cap at 50
+            if(totalPoints > 50) totalPoints = 50;
+
+            // Add to discovered list
+            discoveredWords.add(finalWord);
+
             feedbackEl.className = 'api-success';
-            feedbackEl.innerHTML = `<div style="font-size:18px; font-weight:bold; margin-bottom:5px;">✅ ${finalWord.toUpperCase()}</div><div style="font-size:12px; margin-bottom:5px;">${pos}: ${definition}</div><div style="font-size:11px; color:#2d3436; background:rgba(255,255,255,0.5); padding:5px; border-radius:4px;">${explanation}</div>`;
+            feedbackEl.innerHTML = `
+                <div style="font-size:18px; font-weight:bold; margin-bottom:5px;">✅ ${finalWord.toUpperCase()}</div>
+                <div style="font-size:14px; font-weight:bold; color:#00b894; margin-bottom:5px;">+${totalPoints} Points!</div>
+                <div style="font-size:12px; margin-bottom:5px;">${pos}: ${definition}</div>
+                <div style="font-size:11px; color:#2d3436; background:rgba(255,255,255,0.5); padding:5px; border-radius:4px;">${explanation}</div>
+            `;
             playSound('bonus');
-            score += 50; 
+            score += totalPoints; 
+            
             setTimeout(() => {
                 document.getElementById('word-builder').classList.add('hidden');
                 document.getElementById('ui-layer').style.display = 'flex';
@@ -499,31 +527,8 @@
         document.getElementById('typed-input').innerText = currentTypedWord + "_";
     }
 
-    function spawnAsteroids(data) {
-        asteroids = []; 
-        if(Math.random() > 0.7) spawnBonusItem();
-        let options = [data.word];
-        while(options.length < 3) {
-            let r = gameDeck[Math.floor(Math.random()*gameDeck.length)].word;
-            if(!options.includes(r)) options.push(r);
-        }
-        options.sort(()=>Math.random()-0.5);
-        const speed = 1.0 + (currentLevel * 0.15); 
-        const sector = width/3;
-        options.forEach((word, i) => {
-            asteroids.push({
-                x: i*sector + sector/2 - 40, y: -100 - Math.random()*100,
-                w: 100, h: 50, text: word,
-                isCorrect: word===data.word, speed: speed
-            });
-        });
-    }
-
-    function fireBullet() {
-        if(gameState!=='PLAYING') return;
-        playSound('shoot');
-        bullets.push({x: player.x, y: player.y-20, w: 6, h: 15, speed: 10, color: '#f39c12'});
-    }
+    function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
+    function endGame() { gameState='GAMEOVER'; document.getElementById('game-over-screen').classList.remove('hidden'); document.getElementById('final-score').innerText = "Score: " + score; }
 
     function update() {
         if(gameState !== 'PLAYING') return;
@@ -541,11 +546,7 @@
             let p = powerups[i];
             p.y += p.speed;
             let hit = false;
-            
-            // 1. Ship Hit
             if(Math.hypot(player.x-p.x, player.y-p.y) < 40) { activatePowerup(p); hit=true; }
-            
-            // 2. Bullet Hit
             if(!hit) {
                 for(let j=bullets.length-1; j>=0; j--) {
                     if(Math.hypot(bullets[j].x-p.x, bullets[j].y-p.y) < 30) {
@@ -562,8 +563,6 @@
         for(let i=asteroids.length-1; i>=0; i--) {
             let a = asteroids[i];
             a.y += a.speed;
-            
-            // Floor Logic: Lose life if CORRECT word falls
             if(a.y > height) {
                 if(a.isCorrect) {
                     playerTakeDamage(); 
@@ -574,7 +573,6 @@
                 asteroids.splice(i,1);
                 continue;
             }
-
             for(let j=bullets.length-1; j>=0; j--) {
                 let b = bullets[j];
                 if(b.x > a.x && b.x < a.x+a.w && b.y > a.y && b.y < a.y+a.h) {
@@ -590,10 +588,7 @@
                 }
             }
         }
-
-        // CRITICAL FIX: Ensure asteroids respawn if screen is cleared by gravity/mistakes
         if(asteroids.length === 0 && gameState === 'PLAYING') spawnAsteroids(gameDeck[wordIndex]);
-        
         particles.forEach((p,i)=>{ p.x+=p.vx; p.y+=p.vy; p.life-=0.05; if(p.life<=0) particles.splice(i,1); });
         stars.forEach(s => { s.y += s.speed; if(s.y>height) s.y=0; });
     }
@@ -618,9 +613,6 @@
             particles.forEach(p=>{ctx.globalAlpha=p.life; ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha=1;});
         }
     }
-
-    function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
-    function endGame() { gameState='GAMEOVER'; document.getElementById('game-over-screen').classList.remove('hidden'); document.getElementById('final-score').innerText = "Score: " + score; }
 </script>
 </body>
 </html>
