@@ -259,7 +259,17 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     let width, height;
-    function resize() { width = window.innerWidth; height = window.innerHeight; canvas.width = width; canvas.height = height; }
+    
+    // UPDATED RESIZE FUNCTION: Ensures ship stays on screen
+    function resize() { 
+        width = window.innerWidth; 
+        height = window.innerHeight; 
+        canvas.width = width; 
+        canvas.height = height;
+        // Keep player safe if screen resizes
+        if (player.y > height - 50) player.y = height - 100; 
+        if (player.x > width) player.x = width / 2;
+    }
     window.addEventListener('resize', resize); resize();
 
     // --- AUDIO ---
@@ -345,6 +355,47 @@
         for(let i=0; i<lives; i++) display += "❤️";
         if(lives === 0) display = "💀";
         document.getElementById('lives-display').innerText = display;
+    }
+
+    // RESTORED FUNCTION: Creates Asteroids
+    function spawnAsteroids(data) {
+        asteroids = [];
+        // Correct Answer
+        asteroids.push({
+            x: Math.random() * (width - 100) + 50,
+            y: -100,
+            w: 120, h: 60,
+            text: data.word,
+            isCorrect: true,
+            speed: 1.5 // CONSTANT SPEED (No speed up)
+        });
+
+        // Distractors (Wrong answers)
+        let distractors = gameDeck.filter(d => d.word !== data.word);
+        distractors.sort(() => Math.random() - 0.5);
+
+        for(let i=0; i<2; i++) {
+             asteroids.push({
+                x: Math.random() * (width - 100) + 50,
+                y: -300 - (Math.random() * 200), // Staggered vertical start so they don't overlap
+                w: 120, h: 60,
+                text: distractors[i].word,
+                isCorrect: false,
+                speed: 1.5 // CONSTANT SPEED
+            });
+        }
+    }
+
+    // RESTORED FUNCTION: Firing mechanism
+    function fireBullet() {
+        bullets.push({
+            x: player.x, 
+            y: player.y - 25,
+            w: 6, h: 15,
+            speed: 10,
+            color: '#ff7675'
+        });
+        playSound('shoot');
     }
 
     function spawnParticles(x, y, color) {
@@ -551,7 +602,7 @@
                 for(let j=bullets.length-1; j>=0; j--) {
                     if(Math.hypot(bullets[j].x-p.x, bullets[j].y-p.y) < 30) {
                         activatePowerup(p); 
-                        bullets.splice(j,1);
+                        bullets.splice(j,1); 
                         hit=true; break;
                     }
                 }
